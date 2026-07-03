@@ -1370,6 +1370,15 @@ const FV_TEXT_EXTS = new Set(['txt','md','csv','json','xml','yaml','yml','toml',
   'java','c','cpp','h','go','rs','swift','kt','sql','graphql','env','gitignore','nvmrc',
   'editorconfig','prettierrc','eslintrc','babelrc','dockerfile','makefile','ics']);
 
+const icsDateBadge = str => {
+  if (!str) return { day: '?', mon: '', weekday: '' };
+  try {
+    const d = new Date(`${str.slice(0,4)}-${str.slice(4,6)}-${str.slice(6,8)}`);
+    if (isNaN(d)) return { day: '?', mon: '', weekday: '' };
+    return { day: d.getDate(), mon: d.toLocaleDateString('en-AU',{month:'short'}).toUpperCase(), weekday: d.toLocaleDateString('en-AU',{weekday:'short'}) };
+  } catch { return { day: '?', mon: '', weekday: '' }; }
+};
+
 const fmtIcsDate = str => {
   if (!str) return '';
   const isAllDay = str.length === 8;
@@ -1434,7 +1443,8 @@ function FileViewerTool() {
 
   const load = async f => {
     if (objUrl) URL.revokeObjectURL(objUrl);
-    setFile(f); setErr(''); setEdited(false); setHexBytes(null); setCopied(false); setView('raw');
+    const initView = getExt(f.name) === 'ics' ? 'calendar' : 'raw';
+    setFile(f); setErr(''); setEdited(false); setHexBytes(null); setCopied(false); setView(initView);
     const type = detect(f);
     if (['image','audio','video','pdf'].includes(type)) {
       setFileType(type); setObjUrl(URL.createObjectURL(f)); return;
@@ -1543,19 +1553,24 @@ function FileViewerTool() {
     {fileType === 'text' && view === 'calendar' && icsEvents && <div className="fv-cal">
       {icsEvents.length === 0
         ? <p className="fv-cal-empty">No events found in this calendar file.</p>
-        : icsEvents.map((ev, i) => <div key={i} className="fv-cal-event">
-            <div className="fv-cal-title">{ev.SUMMARY || '(No title)'}</div>
-            {ev.DTSTART && <div className="fv-cal-time">
-              {fmtIcsDate(ev.DTSTART)}{ev.DTEND && ev.DTEND !== ev.DTSTART ? ` → ${fmtIcsDate(ev.DTEND)}` : ''}
-            </div>}
-            <div className="fv-cal-meta">
-              {ev.LOCATION && <span>&#128205; {ev.LOCATION}</span>}
-              {ev.STATUS && <span>{ev.STATUS}</span>}
-              {ev.RRULE && <span>&#128257; Repeating</span>}
-              {ev.ORGANIZER && <span>&#128100; {ev.ORGANIZER.replace(/^.*CN=/,'').replace(/:.*/,'')}</span>}
-            </div>
-            {ev.DESCRIPTION && <div className="fv-cal-desc">{ev.DESCRIPTION.replace(/\\n/g,'\n').replace(/\\,/g,',')}</div>}
-          </div>)
+        : icsEvents.map((ev, i) => {
+            const badge = icsDateBadge(ev.DTSTART);
+            const allDay = ev.DTSTART && ev.DTSTART.length === 8;
+            return <div key={i} className="fv-cal-event">
+              <div className="fv-cal-badge"><span className="fv-cal-badge-day">{badge.day}</span><span className="fv-cal-badge-mon">{badge.mon}</span></div>
+              <div className="fv-cal-body">
+                <div className="fv-cal-title">{ev.SUMMARY || '(No title)'}</div>
+                {ev.DTSTART && <div className="fv-cal-time">{allDay ? `${badge.weekday} · All day` : `${badge.weekday} · ${fmtIcsDate(ev.DTSTART)}${ev.DTEND && ev.DTEND !== ev.DTSTART ? ' → '+fmtIcsDate(ev.DTEND) : ''}`}</div>}
+                <div className="fv-cal-meta">
+                  {ev.LOCATION && <span>&#128205; {ev.LOCATION}</span>}
+                  {ev.STATUS && ev.STATUS !== 'CONFIRMED' && <span>{ev.STATUS}</span>}
+                  {ev.RRULE && <span>&#128257; Repeating</span>}
+                  {ev.ORGANIZER && <span>&#128100; {ev.ORGANIZER.replace(/^.*CN=/,'').replace(/:.*/,'')}</span>}
+                </div>
+                {ev.DESCRIPTION && <div className="fv-cal-desc">{ev.DESCRIPTION.replace(/\\n/g,'\n').replace(/\\,/g,',')}</div>}
+              </div>
+            </div>;
+          })
       }
       <p className="fv-hex-note" style={{marginTop:4}}>{icsEvents.length} event{icsEvents.length !== 1?'s':''} · switch to raw view to edit</p>
     </div>}
