@@ -113,10 +113,26 @@ function Logo({ onClick }) {
 }
 
 function App() {
-  const [activeTool, setActiveTool] = useState(null);
+  const [activeTool, setActiveTool] = useState(() => {
+    const hash = window.location.hash.replace('#', '').trim();
+    return hash && tools.find(t => t.id === hash) ? hash : null;
+  });
   const [menuOpen, setMenuOpen] = useState(false);
-  const openTool = id => { setActiveTool(id); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const goHome = () => { setActiveTool(null); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  useEffect(() => {
+    const onHash = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      const tool = hash && tools.find(t => t.id === hash) ? hash : null;
+      setActiveTool(tool);
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const openTool = id => { setActiveTool(id); setMenuOpen(false); window.location.hash = id; window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const goHome = () => { setActiveTool(null); setMenuOpen(false); history.replaceState(null, '', window.location.pathname + window.location.search); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   return <div className="app-shell">
     <header>
