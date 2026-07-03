@@ -84,6 +84,7 @@ const TOOL_FLAGS = {
 };
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
+const categoryIcons = { All:'✦', Free:'✓', Business:'💼', Productivity:'⚡', Education:'🎓', Calculators:'🧮', Media:'🎬', Utilities:'🔧', 'Files & PDF':'📄', Developer:'💻', 'Local AI':'🤖', 'Uses Credits':'⭐' };
 
 const emojis = [
   ['Smileys', '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😍','🥰','😎','🤓','🤩','🥳','😴','🤔','🫡','🤗','🙌'],
@@ -189,7 +190,7 @@ function Home({ onOpen }) {
     </section>
 
     <section className="tools-section wrap" id="tools">
-      <div className="directory-controls"><label className="directory-search"><Icon name="search"/><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tools, e.g. PDF, invoice, emoji, AI…" aria-label="Search tools"/>{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={16}/></button>}</label><div className="filter-chips" role="group" aria-label="Filter tools by category">{directoryFilters.map(item => <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}>{item}</button>)}</div></div>
+      <div className="directory-controls"><label className="directory-search"><Icon name="search"/><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tools, e.g. PDF, invoice, emoji, AI…" aria-label="Search tools"/>{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={16}/></button>}</label><div className="filter-chips" role="group" aria-label="Filter tools by category">{directoryFilters.map(item => <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}><span className="chip-ico">{categoryIcons[item]}</span>{item}</button>)}</div></div>
       <div className="section-heading directory-heading"><div><span className="kicker">TOOL DIRECTORY</span><h2>{filter === 'All' ? 'What do you need to do?' : filter}</h2></div><p>{visibleTools.length} {visibleTools.length === 1 ? 'tool' : 'tools'} · simple jobs that shouldn’t take all day.</p></div>
       {visibleTools.length ? <div className="tool-grid">{visibleTools.map(tool => <ToolCard key={tool.id} tool={tool} onOpen={onOpen}/>)}</div> : <div className="no-results"><span>⌕</span><h3>No tools found</h3><p>Try another search or category.</p><button onClick={() => { setQuery(''); setFilter('All'); }}>Show all tools</button></div>}
       <div className="more-tools"><span>More tools are on the way</span><p>PDF Compressor, Split PDF, Invoice Builder and more.</p></div>
