@@ -28,6 +28,7 @@ const tools = [
   { id: 'recorder', icon: '🎙️', name: 'Audio Recorder', description: 'Record from your microphone and download the audio. Nothing is uploaded.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
   { id: 'location', icon: '📍', name: 'My Location', description: 'Show your GPS coordinates and accuracy with a map link. Asks permission first.', tint: 'blue', status: 'Available', categories: ['Free', 'Utilities'] },
   { id: 'sysinfo', icon: 'IP', name: 'IP & System Info', description: 'See your public IP, browser, operating system, screen, timezone, and language.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
+  { id: 'camera', icon: '📷', name: 'Camera', description: 'Take photos from your device camera, then pick which ones to download — or grab them all.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
 ];
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
@@ -162,7 +163,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -787,6 +788,51 @@ function SystemInfoTool() {
   const rows = [['Public IP', ip], ['Browser', info.browser], ['Operating system', info.os], ['Language', info.language], ['Time zone', info.timezone], ['Screen', info.screen], ['Window', info.viewport], ['CPU', info.cores], ['Network', info.connection]];
   return <><div className="sysinfo-grid">{rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
     <p className="tool-footnote">Your public IP is fetched from ipify.org; everything else is read from your browser. Nothing here is stored or sent to us.</p></>;
+}
+
+function CameraTool() {
+  const supported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const [active, setActive] = useState(false), [error, setError] = useState(''), [photos, setPhotos] = useState([]), [facingMode, setFacingMode] = useState('user');
+  const videoRef = useRef(null), streamRef = useRef(null);
+  const stopStream = () => { streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null; };
+  useEffect(() => () => { stopStream(); photos.forEach(p => URL.revokeObjectURL(p.url)); }, []);
+  const start = async () => {
+    setError('');
+    try {
+      stopStream();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) { videoRef.current.srcObject = stream; }
+      setActive(true);
+    } catch (err) { setError(err.name === 'NotAllowedError' ? 'Camera permission was denied.' : 'Could not access the camera.'); }
+  };
+  const stop = () => { stopStream(); setActive(false); };
+  const switchCamera = async () => { const next = facingMode === 'user' ? 'environment' : 'user'; setFacingMode(next); if (active) { stopStream(); setActive(false); setTimeout(async () => { try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); streamRef.current = stream; if (videoRef.current) videoRef.current.srcObject = stream; setActive(true); } catch (err) { setError('Could not switch camera.'); } }, 100); } };
+  const snap = () => {
+    const video = videoRef.current; if (!video) return;
+    const canvas = window.document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280; canvas.height = video.videoHeight || 720;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(blob => { if (!blob) return; const url = URL.createObjectURL(blob); const ts = new Date().toISOString().replace(/[:.]/g, '-'); setPhotos(prev => [...prev, { url, name: `photo-${ts}.jpg`, size: blob.size, selected: true }]); }, 'image/jpeg', 0.92);
+  };
+  const toggle = index => setPhotos(prev => prev.map((p, i) => i === index ? { ...p, selected: !p.selected } : p));
+  const remove = index => { URL.revokeObjectURL(photos[index].url); setPhotos(prev => prev.filter((_, i) => i !== index)); };
+  const selectAll = () => setPhotos(prev => prev.map(p => ({ ...p, selected: true })));
+  const deselectAll = () => setPhotos(prev => prev.map(p => ({ ...p, selected: false })));
+  const downloadSelected = () => { photos.filter(p => p.selected).forEach(p => { const a = window.document.createElement('a'); a.href = p.url; a.download = p.name; a.click(); }); };
+  const selected = photos.filter(p => p.selected);
+  if (!supported) return <p className="pdf-error">Your browser does not support camera access.</p>;
+  return <>
+    <div className="camera-controls">
+      {!active ? <button className="button primary" onClick={start}>Open camera</button> : <><button className="button primary" onClick={snap}><Icon name="spark"/> Take photo</button><button className="button secondary" onClick={switchCamera}>Flip camera</button><button className="button secondary" onClick={stop}>Close camera</button></>}
+    </div>
+    {error && <p className="pdf-error">{error}</p>}
+    {active && <div className="camera-viewfinder"><video ref={videoRef} autoPlay playsInline muted className="camera-video"/></div>}
+    {photos.length > 0 && <>
+      <div className="camera-bar"><span>{photos.length} photo{photos.length !== 1 ? 's' : ''} · {selected.length} selected</span><div><button className="button secondary compact" onClick={selectAll}>Select all</button><button className="button secondary compact" onClick={deselectAll}>Deselect all</button><button className="button primary compact" onClick={downloadSelected} disabled={selected.length === 0}>Download {selected.length > 0 ? selected.length : ''} selected</button></div></div>
+      <div className="camera-grid">{photos.map((p, i) => <div key={p.url} className={`camera-thumb ${p.selected ? 'sel' : ''}`} onClick={() => toggle(i)}><img src={p.url} alt={`Photo ${i + 1}`}/><div className="camera-thumb-bar"><span>{formatBytes(p.size)}</span><a href={p.url} download={p.name} onClick={e => e.stopPropagation()} className="camera-dl">↓</a><button onClick={e => { e.stopPropagation(); remove(i); }} className="camera-del">×</button></div><div className="camera-check">{p.selected ? '✓' : ''}</div></div>)}</div>
+    </>}
+    <p className="tool-footnote">Photos are taken in your browser and never uploaded. Tap a photo to select or deselect it before downloading.</p></>;
 }
 
 const rootElement = document.getElementById('root');
