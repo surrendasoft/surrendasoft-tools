@@ -31,6 +31,8 @@ const tools = [
   { id: 'camera', icon: '📷', name: 'Camera', description: 'Take photos from your device camera, then pick which ones to download — or grab them all.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
   { id: 'percent', icon: '%', name: 'Percentage Calculator', description: 'Work out percentages, find what percent one number is of another, and calculate percentage change.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Calculators'] },
   { id: 'units', icon: '⇄', name: 'Unit Converter', description: 'Convert between metric and imperial units for length, weight, temperature, volume, speed, and area.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
+  { id: 'scam', icon: '🛡️', name: 'Scam Email Checker', description: 'Paste a suspicious email to check for scam signals, phishing patterns, and dodgy links.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
+  { id: 'seo', icon: '🔍', name: 'SEO Checker', description: 'Enter a URL to get a quick SEO audit via Google PageSpeed — title, meta, speed, and Core Web Vitals.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Developer'] },
 ];
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
@@ -165,7 +167,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -895,6 +897,127 @@ function UnitConverterTool() {
     </div>
     <p className="unit-eq">{fromVal || '0'} {fromUnit} = <strong>{toVal || '0'} {toUnit}</strong></p>
     <p className="tool-footnote">Conversions use standard international values. Temperature converts exactly. All calculations run locally.</p></>;
+}
+
+function ScamCheckerTool() {
+  const [sender, setSender] = useState(''), [body, setBody] = useState(''), [result, setResult] = useState(null);
+  const freeProviders = ['gmail.com','yahoo.com','hotmail.com','outlook.com','live.com','aol.com','icloud.com','protonmail.com','mail.com','ymail.com','msn.com'];
+  const urlShorteners = ['bit.ly','tinyurl.com','goo.gl','t.co','ow.ly','buff.ly','short.io','rebrand.ly','cutt.ly','rb.gy'];
+  const patterns = [
+    { id:'urgent',   label:'Urgency / pressure',          re:/\b(urgent|immediately|act now|within 24 hours|limited time|expires today|respond asap|last chance|time sensitive|final notice)\b/gi },
+    { id:'prize',    label:'Prize / lottery / windfall',   re:/\b(you.ve? won|you are a winner|lottery|jackpot|prize|claim your|million dollars?|inheritance|next of kin|unclaimed funds?|beneficiary)\b/gi },
+    { id:'money',    label:'Money / payment request',      re:/\b(wire transfer|western union|moneygram|bitcoin|crypto|gift card|itunes card|google play card|send money|transfer funds?|pay via)\b/gi },
+    { id:'creds',    label:'Credential / info request',    re:/\b(verify your (account|identity|details)|confirm your (password|pin|ssn|bank account|credit card)|log ?in to confirm|suspended|account locked|unusual activity|security alert)\b/gi },
+    { id:'impersonate',label:'Impersonation signals',      re:/\b(microsoft|apple|amazon|paypal|netflix|your bank|australian tax|ato|irs|hmrc|federal bureau|fbi|interpol|official notice|government department)\b/gi },
+    { id:'secrecy',  label:'Secrecy / confidentiality',    re:/\b(keep (this |it )?confidential|do not (tell|share|discuss)|strictly private|top secret|for your eyes only)\b/gi },
+    { id:'threat',   label:'Threat / fear tactic',         re:/\b(legal action|arrest warrant|court order|suspend your account|cancel your (service|subscription)|report you|law enforcement|your account will be (closed|terminated))\b/gi },
+    { id:'grammar',  label:'Scam phrasing patterns',       re:/(\bkindly\b|\bdo the needful\b|\bdearest\b|\bbeloved\b|\bGod bless you\b|\bAllah\b.*\btransfer\b|\brespected sir\b|\bdear friend\b.*\bproposal\b)/gi },
+  ];
+  const analyse = () => {
+    const text = `${sender} ${body}`;
+    const flags = patterns.map(p => ({ ...p, hits: [...text.matchAll(p.re)].map(m => m[0].toLowerCase()) })).filter(p => p.hits.length > 0);
+    const senderFlags = [];
+    const s = sender.trim().toLowerCase();
+    if (s) {
+      const domain = (s.match(/@([\w.-]+)$/) || [])[1] || '';
+      const local = s.split('@')[0] || '';
+      if (freeProviders.includes(domain) && /\b(bank|ato|tax|gov|amazon|paypal|microsoft|apple|netflix|support|security|noreply|admin|service)\b/.test(s)) senderFlags.push('Free email provider (e.g. Gmail) pretending to be a company or service');
+      if (/[a-z]{1,4}[0-9]{5,}|[0-9]{4,}[a-z]{1,4}/.test(local)) senderFlags.push('Username looks auto-generated (random letters and numbers)');
+      if (domain && !/^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) senderFlags.push('Sender domain looks malformed or unusual');
+    }
+    const urlFlags = [];
+    const urls = [...body.matchAll(/https?:\/\/[^\s<>"']+/gi)].map(m => m[0]);
+    urls.forEach(raw => { try { const host = new URL(raw).hostname.replace(/^www\./, ''); if (urlShorteners.includes(host)) urlFlags.push(`Shortened URL: ${raw.slice(0,55)}${raw.length>55?'…':''}`); if (/^\d{1,3}(\.\d{1,3}){3}/.test(host)) urlFlags.push(`IP address used as domain: ${host}`); } catch {} });
+    const total = flags.length + senderFlags.length + urlFlags.length;
+    const verdict = total === 0 ? 'safe' : total <= 2 ? 'suspicious' : 'scam';
+    setResult({ flags, senderFlags, urlFlags, total, verdict });
+  };
+  const vm = { safe:{ label:'Looks safe', icon:'✅', col:'#08785f', bg:'#eaf9f4', bd:'#c6ebdf' }, suspicious:{ label:'Suspicious', icon:'⚠️', col:'#a05c00', bg:'#fff8ec', bd:'#f5d896' }, scam:{ label:'Likely a scam', icon:'🚨', col:'#b53e3e', bg:'#fff0f0', bd:'#f5b8b8' } };
+  return <>
+    <div className="scam-form">
+      <label className="textarea-label">Sender email address <span>optional</span><input value={sender} onChange={e => setSender(e.target.value)} placeholder="e.g. noreply@amaz0n-support.com" type="text" autoComplete="off"/></label>
+      <label className="textarea-label">Email body<textarea value={body} onChange={e => setBody(e.target.value)} rows="10" placeholder="Paste the email content here…"/></label>
+    </div>
+    <button className="button primary pdf-action" onClick={analyse} disabled={!body.trim()}>Check for scam signals</button>
+    {result && <>
+      <div className="scam-verdict" style={{ background: vm[result.verdict].bg, borderColor: vm[result.verdict].bd }}>
+        <span style={{ color: vm[result.verdict].col }}>{vm[result.verdict].icon} {vm[result.verdict].label}</span>
+        <p>{result.total === 0 ? 'No common scam patterns detected. Always stay cautious with unexpected emails.' : `${result.total} signal${result.total !== 1 ? 's' : ''} detected. ${result.verdict === 'scam' ? 'Do not click links, reply, or provide personal details.' : 'Proceed with caution and verify independently.'}`}</p>
+      </div>
+      {(result.flags.length + result.senderFlags.length + result.urlFlags.length) > 0 && <div className="scam-flags">
+        {result.senderFlags.map((f, i) => <div key={i} className="scam-flag scam-sender"><span className="scam-tag">Sender</span><span>{f}</span></div>)}
+        {result.urlFlags.map((f, i) => <div key={i} className="scam-flag scam-link"><span className="scam-tag">Link</span><span>{f}</span></div>)}
+        {result.flags.map(f => <div key={f.id} className="scam-flag scam-body"><span className="scam-tag">{f.label}</span><span>{f.hits.slice(0,3).join(', ')}</span></div>)}
+      </div>}
+    </>
+    }
+    <p className="tool-footnote">Pattern matching only — not a substitute for professional security advice. Never click links or provide personal details to emails you are unsure about.</p></>;
+}
+
+function SeoCheckerTool() {
+  const [url, setUrl] = useState('https://surrendasoft.com');
+  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [result, setResult] = useState(null);
+  const normalise = v => /^https?:\/\//i.test(v.trim()) ? v.trim() : `https://${v.trim()}`;
+  const check = async () => {
+    const target = normalise(url);
+    setBusy(true); setError(''); setResult(null);
+    try {
+      const [mRes, dRes] = await Promise.all([
+        fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(target)}&strategy=mobile`),
+        fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(target)}&strategy=desktop`),
+      ]);
+      if (!mRes.ok) { const err = await mRes.json().catch(() => ({})); throw new Error(err?.error?.message || `PageSpeed API error ${mRes.status}. Make sure the URL is public.`); }
+      const [mob, desk] = await Promise.all([mRes.json(), dRes.json()]);
+      const lhr = mob.lighthouseResult, audits = lhr?.audits || {}, cats = lhr?.categories || {};
+      const titleAudit = audits['document-title'], metaAudit = audits['meta-description'], imgAudit = audits['image-alt'], vpAudit = audits['viewport'];
+      const titleText = titleAudit?.details?.items?.[0]?.snippet || (titleAudit?.score === 0 ? 'Missing' : '—');
+      const metaText = metaAudit?.score === 1 ? (metaAudit?.details?.items?.[0]?.value?.slice(0,80) || 'Present') : 'Missing';
+      const imgText = imgAudit?.score === 1 ? 'All images have alt text' : imgAudit?.details?.items?.length ? `Missing on ${imgAudit.details.items.length} image(s)` : 'Unknown';
+      const vpText = vpAudit?.score === 1 ? 'Configured' : 'Missing or misconfigured';
+      const mobScore = Math.round((cats?.performance?.score ?? 0) * 100);
+      const deskScore = Math.round((desk.lighthouseResult?.categories?.performance?.score ?? 0) * 100);
+      const seoScore = Math.round((cats?.seo?.score ?? 0) * 100);
+      const a11yScore = Math.round((cats?.accessibility?.score ?? 0) * 100);
+      const fcp = audits['first-contentful-paint']?.displayValue || '—';
+      const lcp = audits['largest-contentful-paint']?.displayValue || '—';
+      const tbt = audits['total-blocking-time']?.displayValue || '—';
+      const cls = audits['cumulative-layout-shift']?.displayValue || '—';
+      const opps = Object.values(audits).filter(a => a.score !== null && a.score < 0.9 && a.details?.type === 'opportunity').sort((a,b) => (b.details?.overallSavingsMs||0)-(a.details?.overallSavingsMs||0)).map(a => a.title).slice(0,5);
+      const displayUrl = lhr?.finalDisplayedUrl || target;
+      setResult({ displayUrl, titleText, metaText, imgText, vpText, mobScore, deskScore, seoScore, a11yScore, fcp, lcp, tbt, cls, opps, https: target.startsWith('https') });
+    } catch (err) { setError(err.message || 'Could not fetch SEO data.'); }
+    setBusy(false);
+  };
+  const tier = n => n >= 90 ? 'good' : n >= 50 ? 'ok' : 'poor';
+  return <>
+    <div className="status-input-row">
+      <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && !busy && check()} placeholder="https://example.com" type="url" aria-label="Website URL to check"/>
+      <button className="button primary" onClick={check} disabled={busy || !url.trim()}>{busy ? 'Checking…' : 'Check SEO'}</button>
+    </div>
+    {error && <p className="pdf-error">{error}</p>}
+    {result && <>
+      <p className="seo-url">{result.displayUrl}</p>
+      <div className="seo-scores">
+        <div className={`seo-score ${tier(result.mobScore)}`}><strong>{result.mobScore}</strong><span>Mobile speed</span></div>
+        <div className={`seo-score ${tier(result.deskScore)}`}><strong>{result.deskScore}</strong><span>Desktop speed</span></div>
+        <div className={`seo-score ${tier(result.seoScore)}`}><strong>{result.seoScore}</strong><span>SEO score</span></div>
+        <div className={`seo-score ${tier(result.a11yScore)}`}><strong>{result.a11yScore}</strong><span>Accessibility</span></div>
+      </div>
+      <div className="seo-grid">
+        <div><span>Title tag</span><strong title={result.titleText}>{result.titleText.length > 55 ? result.titleText.slice(0,55)+'…' : result.titleText}</strong></div>
+        <div><span>Meta description</span><strong>{result.metaText.length > 80 ? result.metaText.slice(0,80)+'…' : result.metaText}</strong></div>
+        <div><span>Image alt text</span><strong>{result.imgText}</strong></div>
+        <div><span>Viewport meta</span><strong>{result.vpText}</strong></div>
+        <div><span>HTTPS</span><strong>{result.https ? 'Yes ✓' : 'No — not secure'}</strong></div>
+        <div><span>First Contentful Paint</span><strong>{result.fcp}</strong></div>
+        <div><span>Largest Contentful Paint</span><strong>{result.lcp}</strong></div>
+        <div><span>Total Blocking Time</span><strong>{result.tbt}</strong></div>
+        <div><span>Layout Shift (CLS)</span><strong>{result.cls}</strong></div>
+      </div>
+      {result.opps.length > 0 && <div className="seo-opps"><strong>Top opportunities</strong><ul>{result.opps.map((o,i) => <li key={i}>{o}</li>)}</ul></div>}
+    </>
+    }
+    <p className="tool-footnote">Powered by Google PageSpeed Insights (free, no API key). The site must be publicly accessible. Scores are out of 100 and may vary slightly between runs.</p></>;
 }
 
 const rootElement = document.getElementById('root');
