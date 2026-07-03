@@ -38,12 +38,36 @@ const tools = [
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
 const TOOL_FLAGS = {
-  emoji: true, dates: true, schedule: true, gst: true, cleaner: true,
-  oneline: true, invoice: true, case: true, counter: true, shrinker: true,
-  html: true, json: true, imagepdf: true, pdfimage: true, combinepdf: true,
-  webstatus: true, speed: true, hourly: true, margin: true, signpdf: true,
-  tts: true, recorder: true, location: true, sysinfo: true, camera: true,
-  percent: true, units: true, scam: true, seo: true, calc: true,
+  emoji:      true, // Search and copy emojis
+  dates:      true, // Days / weeks / business days between two dates
+  schedule:   true, // Repeating calendar session generator → .ics download
+  gst:        true, // Add or remove Australian GST (10%)
+  cleaner:    true, // Strip extra spaces and line breaks from text
+  oneline:    true, // Collapse multi-line text into a single line
+  invoice:    true, // AI-assisted invoice description writer
+  case:       true, // UPPER / lower / Title / Sentence case converter
+  counter:    true, // Word, character, sentence, paragraph counter
+  shrinker:   true, // Compress images for email / upload
+  html:       true, // Sandboxed HTML preview
+  json:       true, // Format and validate JSON
+  imagepdf:   true, // JPG / PNG images → PDF
+  pdfimage:   true, // PDF pages → PNG images
+  combinepdf: true, // Merge multiple PDFs into one
+  webstatus:  true, // Check if a website is reachable
+  speed:      true, // Browser-based download speed test
+  hourly:     true, // Sustainable hourly rate from income goals
+  margin:     true, // Selling price, profit, margin, and markup
+  signpdf:    true, // Drag a drawn or uploaded signature onto a PDF
+  tts:        true, // Browser text-to-speech with voice / speed controls
+  recorder:   true, // Microphone recorder → download audio
+  location:   true, // GPS coordinates + map link
+  sysinfo:    true, // Public IP, browser, OS, screen, timezone
+  camera:     true, // Snap photos and download selected shots
+  percent:    true, // Percentage of, what % is X of Y, % change
+  units:      true, // Length / weight / temp / volume / speed / area converter
+  scam:       true, // Pattern-match email body for scam / phishing signals
+  seo:        true, // Google PageSpeed SEO audit for a URL
+  calc:       true, // Basic arithmetic calculator
 };
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
