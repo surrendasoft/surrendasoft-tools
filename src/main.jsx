@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { buildIcs, padCalendar } from './calendar.js';
 import './styles.css';
 
 const tools = [
   { id: 'emoji', icon: '😁', name: 'Emoji Copy', description: 'Search, copy, and paste emojis quickly for messages, social posts, emails, and captions.', tint: 'yellow', status: 'Available', categories: ['Free'] },
   { id: 'dates', icon: '17', name: 'Date Range Calculator', description: 'Calculate days, weeks, business days, deadlines, and time between dates.', tint: 'blue', status: 'Available', categories: ['Free', 'Business'] },
+  { id: 'schedule', icon: '📅', name: 'Calendar Schedule Generator', description: 'Create calendar files for timetables, programs, workshops, and repeating sessions.', tint: 'blue', status: 'Available', tags: ['Free', 'Browser-based', 'Downloads ICS'], categories: ['Free', 'Business', 'Productivity', 'Education'] },
   { id: 'gst', icon: '%', name: 'GST Calculator', description: 'Add or remove GST quickly for Australian invoices, quotes, and basic pricing checks.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'cleaner', icon: 'Aa', name: 'Text Cleaner', description: 'Remove extra spaces and line breaks, then tidy pasted text in one click.', tint: 'purple', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'oneline', icon: '→', name: 'Text to One Line', description: 'Remove line breaks and turn multi-line text into one clean, copy-ready line.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
@@ -17,9 +19,13 @@ const tools = [
   { id: 'imagepdf', icon: 'IMG', name: 'Image to PDF', description: 'Turn one or more JPG or PNG images into a clean, downloadable PDF.', tint: 'yellow', status: 'Available', categories: ['Free', 'Files & PDF'] },
   { id: 'pdfimage', icon: 'PDF', name: 'PDF to Image', description: 'Convert each page of a PDF into a high-quality PNG image in your browser.', tint: 'blue', status: 'Available', categories: ['Free', 'Files & PDF'] },
   { id: 'combinepdf', icon: 'PDF+', name: 'Combine PDFs', description: 'Merge multiple PDF files into one document in the order you choose.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF'] },
+  { id: 'webstatus', icon: 'URL', name: 'Website Status Checker', description: 'Check whether a website is reachable and see response timing when the browser can read it.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Developer'] },
+  { id: 'speed', icon: 'NET', name: 'Internet Speed Checker', description: 'Run a quick browser download test and estimate your current connection speed.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
+  { id: 'hourly', icon: 'HR', name: 'Hourly Rate Calculator', description: 'Work out a sustainable hourly rate from income goals, billable hours, overheads, and profit.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business'] },
+  { id: 'margin', icon: '$', name: 'Profit Margin Calculator', description: 'Calculate selling price, profit, margin, and markup for products or services.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
 ];
 
-const directoryFilters = ['All', 'Free', 'Business', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
+const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
 
 const emojis = [
   ['Smileys', '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😍','🥰','😎','🤓','🤩','🥳','😴','🤔','🫡','🤗','🙌'],
@@ -151,7 +157,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -168,6 +174,67 @@ function DateTool() {
   const [start,setStart]=useState(today), [end,setEnd]=useState(later);
   const result = useMemo(() => { const a=new Date(start+'T00:00:00'), b=new Date(end+'T00:00:00'); if (!start||!end||isNaN(a)||isNaN(b)) return null; const days=Math.round((b-a)/86400000); let business=0, d=new Date(a), dir=days>=0?1:-1; for(let i=0;i<Math.abs(days);i++){d.setDate(d.getDate()+dir); if(d.getDay()!==0&&d.getDay()!==6)business+=dir;} return {days,weeks:(days/7).toFixed(1),business}; },[start,end]);
   return <><div className="field-row"><label>Start date<input type="date" value={start} onChange={e=>setStart(e.target.value)}/></label><label>End date<input type="date" value={end} onChange={e=>setEnd(e.target.value)}/></label></div>{result && <div className="result-grid"><div><strong>{Math.abs(result.days)}</strong><span>calendar days</span></div><div><strong>{Math.abs(result.business)}</strong><span>business days</span></div><div><strong>{Math.abs(result.weeks)}</strong><span>weeks</span></div></div>}<p className="result-caption">{result?.days === 0 ? 'These dates are the same day.' : `${Math.abs(result?.days || 0)} days ${result?.days < 0 ? 'before' : 'after'} the start date.`}</p></>;
+}
+
+function CalendarScheduleTool() {
+  const tomorrowDate = new Date(Date.now() + 86400000);
+  const tomorrow = `${tomorrowDate.getFullYear()}-${padCalendar(tomorrowDate.getMonth() + 1)}-${padCalendar(tomorrowDate.getDate())}`;
+  const [form, setForm] = useState({ title: 'Counselling Lecture', date: tomorrow, start: '09:00', end: '11:00', repeat: 'weekly', sessions: 12, location: 'City campus', description: 'Master of Counselling class', titleFormat: 'week' });
+  const [events, setEvents] = useState([]), [error, setError] = useState(''), [copied, setCopied] = useState(false);
+  const update = (field, value) => { setForm(current => ({ ...current, [field]: value })); setEvents([]); setError(''); setCopied(false); };
+  const createDate = (date, time) => new Date(`${date}T${time}:00`);
+  const sessionDate = (start, index) => {
+    if (form.repeat !== 'monthly') return new Date(start.getTime() + index * (form.repeat === 'fortnightly' ? 14 : 7) * 86400000);
+    const result = new Date(start), day = start.getDate();
+    result.setDate(1); result.setMonth(start.getMonth() + index);
+    result.setDate(Math.min(day, new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate()));
+    return result;
+  };
+  const buildEvents = () => {
+    const start = createDate(form.date, form.start), end = createDate(form.date, form.end), count = Math.min(52, Math.max(1, Number(form.sessions) || 1));
+    if (!form.title.trim()) return setError('Enter an event title.');
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return setError('Choose a valid date and time.');
+    if (end <= start) return setError('End time must be later than start time.');
+    const duration = end - start;
+    const nextEvents = Array.from({ length: count }, (_, index) => {
+      const eventStart = sessionDate(start, index), eventEnd = new Date(sessionDate(start, index).getTime() + duration);
+      return { title: formatEventTitle(index), start: eventStart, end: eventEnd, location: form.location.trim(), description: form.description.trim(), number: index + 1 };
+    });
+    setEvents(nextEvents); setError(''); return nextEvents;
+  };
+  const formatEventTitle = index => {
+    const baseTitle = form.title.trim() || 'Event title';
+    if (form.titleFormat === 'week') return `Week ${index + 1} - ${baseTitle}`;
+    if (form.titleFormat === 'session') return `Session ${index + 1} - ${baseTitle}`;
+    return baseTitle;
+  };
+  const summary = list => list.map(event => `${event.title} — ${event.start.toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`).join('\n');
+  const download = () => {
+    const list = events.length ? events : buildEvents(); if (!list?.length) return;
+    const ics = buildIcs(list);
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url; link.download = `${form.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'schedule'}.ics`; document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const copySummary = async () => { const list = events.length ? events : buildEvents(); if (!list?.length) return; await navigator.clipboard?.writeText(summary(list)); setCopied(true); };
+  const displayDate = date => date.toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+  return <>
+    <div className="schedule-form">
+      <label className="wide">Base event title<input value={form.title} onChange={event => update('title', event.target.value)} placeholder="e.g. Counselling Lecture"/></label>
+      <label>Start date<input type="date" value={form.date} onChange={event => update('date', event.target.value)}/></label>
+      <label>Repeat every<select value={form.repeat} onChange={event => update('repeat', event.target.value)}><option value="weekly">Week</option><option value="fortnightly">Fortnight</option><option value="monthly">Month</option></select></label>
+      <label>Start time<input type="time" value={form.start} onChange={event => update('start', event.target.value)}/></label>
+      <label>End time<input type="time" value={form.end} onChange={event => update('end', event.target.value)}/></label>
+      <label>Number of sessions<input type="number" min="1" max="52" value={form.sessions} onChange={event => update('sessions', event.target.value)}/></label>
+      <label>Title format<select value={form.titleFormat} onChange={event => update('titleFormat', event.target.value)}><option value="same">Same title every time</option><option value="week">Week 1 - Title</option><option value="session">Session 1 - Title</option></select><small className="schedule-sample">First event: {formatEventTitle(0)}</small></label>
+      <label className="wide">Location <span>optional</span><input value={form.location} onChange={event => update('location', event.target.value)} placeholder="e.g. City campus"/></label>
+      <label className="wide">Description <span>optional</span><textarea rows="2" value={form.description} onChange={event => update('description', event.target.value)} placeholder="Notes for every event"/></label>
+    </div>
+    <button className="button primary schedule-generate" onClick={buildEvents}>Generate schedule</button>
+    {error && <p className="pdf-error">{error}</p>}
+    {events.length > 0 && <div className="schedule-output"><div className="schedule-output-head"><div><strong>{events.length}-session schedule</strong><span>{form.repeat === 'fortnightly' ? 'Fortnightly' : form.repeat === 'monthly' ? 'Monthly' : 'Weekly'} · {displayDate(events[0].start)} to {displayDate(events[events.length - 1].start)}</span></div><span>Ready for calendar</span></div><div className="schedule-preview">{events.map(event => <div key={event.number}><b>{event.number}</b><p><strong>{event.title}</strong><span>{displayDate(event.start)} – {event.end.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}{event.location ? ` · ${event.location}` : ''}</span></p></div>)}</div><div className="schedule-actions"><button className="button primary" onClick={download}>Download .ics</button><button className="button secondary" onClick={copySummary}><Icon name={copied ? 'check' : 'copy'} size={18}/>{copied ? 'Copied' : 'Copy calendar summary'}</button></div><p className="calendar-help">Import the downloaded file into Google Calendar, Apple Calendar, or Outlook. All sessions are created as separate events, so each can be edited later.</p></div>}
+  </>;
 }
 
 function GstTool() {
@@ -407,4 +474,91 @@ function CombinePdfTool() {
   return <><FileDrop accept="application/pdf" multiple onFiles={next => { setFiles(current => [...current, ...next]); setResult(null); setError(''); }} title="Choose PDF files" hint="Select at least two files; they stay on your device"/>{files.length > 0 && <FileList files={files} onRemove={index => setFiles(files.filter((_, i) => i !== index))} onMove={move}/>}<button className="button primary pdf-action" onClick={combine} disabled={files.length < 2 || busy}>{busy ? 'Combining PDFs…' : files.length < 2 ? 'Add at least two PDFs' : `Combine ${files.length} PDFs`}</button>{error && <p className="pdf-error">{error}</p>}{result && <div className="pdf-result"><div><strong>Combined PDF ready</strong><span>{files.length} files · {formatBytes(result.size)}</span></div><a className="button primary compact" href={result.url} download="surrendasoft-combined.pdf">Download PDF</a></div>}</>;
 }
 
-createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);
+function WebsiteStatusTool() {
+  const [url, setUrl] = useState('https://surrendasoft.com');
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState(null);
+  const normaliseUrl = value => /^https?:\/\//i.test(value.trim()) ? value.trim() : `https://${value.trim()}`;
+  const check = async () => {
+    if (!url.trim()) return;
+    const target = normaliseUrl(url);
+    setChecking(true); setResult(null);
+    const started = performance.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await fetch(target, { method: 'HEAD', cache: 'no-store', signal: controller.signal });
+      setResult({ type: response.ok ? 'success' : 'warning', title: response.ok ? 'Website responded' : 'Website returned an error', detail: `${response.status} ${response.statusText || 'response'} - ${Math.round(performance.now() - started)} ms`, target });
+    } catch (error) {
+      try {
+        await fetch(target, { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
+        setResult({ type: 'success', title: 'Website appears reachable', detail: `Reached in ${Math.round(performance.now() - started)} ms. Status code is hidden by browser privacy rules.`, target });
+      } catch (fallbackError) {
+        setResult({ type: 'error', title: fallbackError.name === 'AbortError' ? 'Request timed out' : 'Could not reach website', detail: fallbackError.name === 'AbortError' ? 'No response within 8 seconds.' : 'The site may be offline, blocking browser checks, or the address may be incorrect.', target });
+      }
+    } finally {
+      clearTimeout(timeout); setChecking(false);
+    }
+  };
+  return <><label className="textarea-label status-url">Website URL<input value={url} onChange={event => { setUrl(event.target.value); setResult(null); }} placeholder="example.com" inputMode="url"/></label><button className="button primary status-button" onClick={check} disabled={checking || !url.trim()}>{checking ? 'Checking...' : 'Check website'}</button>{result && <div className={`status-result ${result.type}`}><div><strong>{result.title}</strong><span>{result.target}</span></div><p>{result.detail}</p></div>}<p className="tool-footnote">Browser checks can confirm reachability, but a backend monitor is needed for full uptime, SSL, and regional checks.</p></>;
+}
+
+function InternetSpeedTool() {
+  const [size, setSize] = useState(5);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState(null);
+  const runTest = async () => {
+    setRunning(true); setResult(null);
+    const bytes = size * 1000 * 1000;
+    const started = performance.now();
+    try {
+      const response = await fetch(`https://speed.cloudflare.com/__down?bytes=${bytes}&cache=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Speed test returned ${response.status}`);
+      const buffer = await response.arrayBuffer();
+      const seconds = (performance.now() - started) / 1000;
+      const mbps = (buffer.byteLength * 8) / seconds / 1000 / 1000;
+      setResult({ type: 'success', mbps, seconds, size: buffer.byteLength });
+    } catch (error) {
+      setResult({ type: 'error', message: error.message || 'Could not complete the speed test.' });
+    }
+    setRunning(false);
+  };
+  const speedRating = mbps => {
+    if (mbps >= 100) return { label: 'Excellent', note: 'Great for 4K streaming, large uploads, and video calls.', color: '#08785f' };
+    if (mbps >= 25)  return { label: 'Fast', note: 'Handles HD streaming, remote work, and video calls comfortably.', color: '#1666d9' };
+    if (mbps >= 10)  return { label: 'Okay', note: 'Fine for browsing and SD video. May struggle with 4K or large files.', color: '#8a6500' };
+    if (mbps >= 5)   return { label: 'Slow', note: 'Basic browsing should work. Streaming and large downloads will be slow.', color: '#c25c00' };
+    return { label: 'Very slow', note: 'May struggle with most online tasks. Try restarting your router or moving closer to it.', color: '#a83b3b' };
+  };
+  return <><div className="speed-panel"><label>Test size<select value={size} onChange={event => setSize(Number(event.target.value))}><option value="1">Quick - 1 MB</option><option value="5">Standard - 5 MB</option><option value="10">Stronger - 10 MB</option></select></label><button className="button primary" onClick={runTest} disabled={running}>{running ? 'Testing...' : 'Start speed test'}</button></div>{result?.type === 'success' && (() => { const r = speedRating(result.mbps); return <div className="speed-result"><strong>{result.mbps.toFixed(1)} Mbps</strong><div className="speed-rating" style={{color: r.color}}><span className="speed-rating-label">{r.label}</span><span className="speed-rating-note">{r.note}</span></div><span className="speed-detail">{formatBytes(result.size)} downloaded in {result.seconds.toFixed(2)} s</span><meter min="0" max="150" optimum="100" value={Math.min(150, result.mbps)}/></div>; })()}{result?.type === 'error' && <p className="pdf-error">{result.message}</p>}<p className="tool-footnote">This is a quick download estimate from your current browser session, not a replacement for a full ISP diagnostic.</p></>;
+}
+
+function HourlyRateTool() {
+  const [income, setIncome] = useState('120000'), [hours, setHours] = useState('25'), [weeksOff, setWeeksOff] = useState('5'), [overhead, setOverhead] = useState('15'), [profit, setProfit] = useState('20');
+  const money = value => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(value || 0);
+  const values = useMemo(() => {
+    const targetIncome = Math.max(0, Number(income) || 0), billableHours = Math.max(1, Number(hours) || 1), workingWeeks = Math.max(1, 52 - (Number(weeksOff) || 0));
+    const overheadRate = Math.max(0, Number(overhead) || 0) / 100, profitRate = Math.max(0, Number(profit) || 0) / 100;
+    const requiredRevenue = targetIncome * (1 + overheadRate) / Math.max(.01, 1 - profitRate);
+    const yearlyHours = billableHours * workingWeeks;
+    return { rate: requiredRevenue / yearlyHours, yearlyHours, monthlyRevenue: requiredRevenue / 12, requiredRevenue };
+  }, [income, hours, weeksOff, overhead, profit]);
+  return <><div className="calculator-form"><label>Target annual pay<input type="number" min="0" value={income} onChange={event => setIncome(event.target.value)}/></label><label>Billable hours per week<input type="number" min="1" value={hours} onChange={event => setHours(event.target.value)}/></label><label>Weeks off per year<input type="number" min="0" max="51" value={weeksOff} onChange={event => setWeeksOff(event.target.value)}/></label><label>Overheads<input type="number" min="0" value={overhead} onChange={event => setOverhead(event.target.value)}/><span>%</span></label><label>Profit buffer<input type="number" min="0" max="95" value={profit} onChange={event => setProfit(event.target.value)}/><span>%</span></label></div><div className="calculator-results"><div className="hero-stat"><span>Suggested hourly rate</span><strong>{money(values.rate)}</strong></div><Stat value={Math.round(values.yearlyHours)} label="Billable hours/year"/><Stat value={money(values.monthlyRevenue)} label="Monthly revenue"/><Stat value={money(values.requiredRevenue)} label="Annual revenue"/></div><p className="tool-footnote">Thoughts: this is a genuinely useful business tool because it turns vague pricing anxiety into concrete inputs.</p></>;
+}
+
+function ProfitMarginTool() {
+  const [mode, setMode] = useState('price'), [cost, setCost] = useState('65'), [price, setPrice] = useState('120'), [targetMargin, setTargetMargin] = useState('35');
+  const money = value => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(value || 0);
+  const values = useMemo(() => {
+    const costValue = Math.max(0, Number(cost) || 0);
+    const sellPrice = mode === 'target' ? costValue / Math.max(.01, 1 - (Math.max(0, Number(targetMargin) || 0) / 100)) : Math.max(0, Number(price) || 0);
+    const grossProfit = sellPrice - costValue;
+    return { sellPrice, grossProfit, margin: sellPrice ? grossProfit / sellPrice * 100 : 0, markup: costValue ? grossProfit / costValue * 100 : 0 };
+  }, [mode, cost, price, targetMargin]);
+  return <><div className="gst-mode" role="group" aria-label="Profit margin mode"><button className={mode === 'price' ? 'active' : ''} onClick={() => setMode('price')}>Known sell price</button><button className={mode === 'target' ? 'active' : ''} onClick={() => setMode('target')}>Target margin</button></div><div className="calculator-form"><label>Cost<input type="number" min="0" step="0.01" value={cost} onChange={event => setCost(event.target.value)}/></label>{mode === 'price' ? <label>Sell price<input type="number" min="0" step="0.01" value={price} onChange={event => setPrice(event.target.value)}/></label> : <label>Target margin<input type="number" min="0" max="95" step="0.1" value={targetMargin} onChange={event => setTargetMargin(event.target.value)}/><span>%</span></label>}</div><div className="margin-results"><div><span>Sell price</span><strong>{money(values.sellPrice)}</strong></div><div><span>Gross profit</span><strong>{money(values.grossProfit)}</strong></div><div><span>Profit margin</span><strong>{values.margin.toFixed(1)}%</strong></div><div><span>Markup</span><strong>{values.markup.toFixed(1)}%</strong></div></div><p className="tool-footnote">Thoughts: this pairs well with the hourly calculator and makes markup versus margin obvious.</p></>;
+}
+
+const rootElement = document.getElementById('root');
+const root = globalThis.__surrendaSoftRoot || createRoot(rootElement);
+globalThis.__surrendaSoftRoot = root;
+root.render(<React.StrictMode><App/></React.StrictMode>);
