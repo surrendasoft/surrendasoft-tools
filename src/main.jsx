@@ -33,6 +33,7 @@ const tools = [
   { id: 'units', icon: '⇄', name: 'Unit Converter', description: 'Convert between metric and imperial units for length, weight, temperature, volume, speed, and area.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
   { id: 'scam', icon: '🛡️', name: 'Scam Email Checker', description: 'Paste a suspicious email to check for scam signals, phishing patterns, and dodgy links.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
   { id: 'seo', icon: '🔍', name: 'SEO Checker', description: 'Enter a URL to get a quick SEO audit via Google PageSpeed — title, meta, speed, and Core Web Vitals.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Developer'] },
+  { id: 'calc', icon: '🧮', name: 'Calculator', description: 'A straightforward calculator for everyday arithmetic — add, subtract, multiply, divide.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
 ];
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
@@ -167,7 +168,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -1018,6 +1019,54 @@ function SeoCheckerTool() {
     </>
     }
     <p className="tool-footnote">Powered by Google PageSpeed Insights (free, no API key). The site must be publicly accessible. Scores are out of 100 and may vary slightly between runs.</p></>;
+}
+
+function CalculatorTool() {
+  const [display, setDisplay] = useState('0');
+  const [expr, setExpr] = useState('');
+  const [justEvaled, setJustEvaled] = useState(false);
+  const press = key => {
+    if (key === 'AC') { setDisplay('0'); setExpr(''); setJustEvaled(false); return; }
+    if (key === '±') { setDisplay(d => d.startsWith('-') ? d.slice(1) : d === '0' ? '0' : '-' + d); return; }
+    if (key === '%') { setDisplay(d => String(parseFloat(d) / 100)); return; }
+    if (key === '=') {
+      try {
+        const full = expr + display;
+        // Safe eval: only digits, operators, dot, parens
+        if (!/^[\d.+\-*/()\s]+$/.test(full)) return;
+        // eslint-disable-next-line no-new-func
+        const res = Function('"use strict"; return (' + full + ')')();
+        const out = isFinite(res) ? String(parseFloat(res.toFixed(10))) : 'Error';
+        setDisplay(out); setExpr(''); setJustEvaled(true);
+      } catch { setDisplay('Error'); setExpr(''); setJustEvaled(true); }
+      return;
+    }
+    const isOp = ['+', '-', '×', '÷'].includes(key);
+    const opChar = key === '×' ? '*' : key === '÷' ? '/' : key;
+    if (isOp) {
+      setExpr(display + opChar); setDisplay('0'); setJustEvaled(false); return;
+    }
+    if (justEvaled) { setDisplay(key === '.' ? '0.' : key); setJustEvaled(false); return; }
+    if (key === '.' && display.includes('.')) return;
+    setDisplay(d => d === '0' && key !== '.' ? key : d + key);
+  };
+  const rows = [['AC','±','%','÷'],['7','8','9','×'],['4','5','6','-'],['1','2','3','+'],[['0',2],'.',  '=']];
+  return <div className="calc-wrap">
+    <div className="calc-screen">
+      <div className="calc-expr">{expr}</div>
+      <div className="calc-display">{display.length > 12 ? parseFloat(parseFloat(display).toPrecision(9)).toString() : display}</div>
+    </div>
+    <div className="calc-keys">
+      {rows.map((row, ri) => <div key={ri} className="calc-row">
+        {row.map((k, ki) => {
+          const [key, span] = Array.isArray(k) ? k : [k, 1];
+          const isOp = ['÷','×','-','+','='].includes(key);
+          const isFn = ['AC','±','%'].includes(key);
+          return <button key={ki} onClick={() => press(key)} className={`calc-key${isOp?' calc-op':''}${isFn?' calc-fn':''}${key==='='?' calc-eq':''}`} style={span>1?{gridColumn:`span ${span}`}:{}}>{key}</button>;
+        })}
+      </div>)}
+    </div>
+  </div>;
 }
 
 const rootElement = document.getElementById('root');
