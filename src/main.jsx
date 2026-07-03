@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { buildIcs, padCalendar } from './calendar.js';
 import './styles.css';
@@ -23,9 +23,14 @@ const tools = [
   { id: 'speed', icon: 'NET', name: 'Internet Speed Checker', description: 'Run a quick browser download test and estimate your current connection speed.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'hourly', icon: 'HR', name: 'Hourly Rate Calculator', description: 'Work out a sustainable hourly rate from income goals, billable hours, overheads, and profit.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'margin', icon: '$', name: 'Profit Margin Calculator', description: 'Calculate selling price, profit, margin, and markup for products or services.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
+  { id: 'signpdf', icon: '✍️', name: 'Sign PDF', description: 'Add typed text and a hand-drawn signature to a PDF, then download the signed file.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Business'] },
+  { id: 'tts', icon: '🔊', name: 'Text to Speech', description: 'Read any text aloud with your browser voice. Choose the voice, speed, and pitch.', tint: 'purple', status: 'Available', categories: ['Free', 'Media', 'Productivity'] },
+  { id: 'recorder', icon: '🎙️', name: 'Audio Recorder', description: 'Record from your microphone and download the audio. Nothing is uploaded.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
+  { id: 'location', icon: '📍', name: 'My Location', description: 'Show your GPS coordinates and accuracy with a map link. Asks permission first.', tint: 'blue', status: 'Available', categories: ['Free', 'Utilities'] },
+  { id: 'sysinfo', icon: 'IP', name: 'IP & System Info', description: 'See your public IP, browser, operating system, screen, timezone, and language.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
 ];
 
-const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
+const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
 
 const emojis = [
   ['Smileys', '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😍','🥰','😎','🤓','🤩','🥳','😴','🤔','🫡','🤗','🙌'],
@@ -157,7 +162,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -558,7 +563,167 @@ function ProfitMarginTool() {
   return <><div className="gst-mode" role="group" aria-label="Profit margin mode"><button className={mode === 'price' ? 'active' : ''} onClick={() => setMode('price')}>Known sell price</button><button className={mode === 'target' ? 'active' : ''} onClick={() => setMode('target')}>Target margin</button></div><div className="calculator-form"><label>Cost<input type="number" min="0" step="0.01" value={cost} onChange={event => setCost(event.target.value)}/></label>{mode === 'price' ? <label>Sell price<input type="number" min="0" step="0.01" value={price} onChange={event => setPrice(event.target.value)}/></label> : <label>Target margin<input type="number" min="0" max="95" step="0.1" value={targetMargin} onChange={event => setTargetMargin(event.target.value)}/><span>%</span></label>}</div><div className="margin-results"><div><span>Sell price</span><strong>{money(values.sellPrice)}</strong></div><div><span>Gross profit</span><strong>{money(values.grossProfit)}</strong></div><div><span>Profit margin</span><strong>{values.margin.toFixed(1)}%</strong></div><div><span>Markup</span><strong>{values.markup.toFixed(1)}%</strong></div></div><p className="tool-footnote">Thoughts: this pairs well with the hourly calculator and makes markup versus margin obvious.</p></>;
 }
 
+function SignPdfTool() {
+  const [file, setFile] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [result, setResult] = useState(null);
+  const [signedText, setSignedText] = useState(''), [position, setPosition] = useState('bottom-right'), [pageChoice, setPageChoice] = useState('last'), [size, setSize] = useState(180), [hasInk, setHasInk] = useState(false);
+  const canvasRef = useRef(null), drawing = useRef(false), lastPoint = useRef(null);
+  useEffect(() => () => { if (result?.url) URL.revokeObjectURL(result.url); }, [result?.url]);
+  useEffect(() => { const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext('2d'); ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#10183e'; }, [file]);
+  const pointerPos = event => { const canvas = canvasRef.current, rect = canvas.getBoundingClientRect(), point = event.touches ? event.touches[0] : event; return { x: (point.clientX - rect.left) * (canvas.width / rect.width), y: (point.clientY - rect.top) * (canvas.height / rect.height) }; };
+  const startDraw = event => { event.preventDefault(); drawing.current = true; lastPoint.current = pointerPos(event); };
+  const moveDraw = event => { if (!drawing.current) return; event.preventDefault(); const ctx = canvasRef.current.getContext('2d'), point = pointerPos(event); ctx.beginPath(); ctx.moveTo(lastPoint.current.x, lastPoint.current.y); ctx.lineTo(point.x, point.y); ctx.stroke(); lastPoint.current = point; setHasInk(true); };
+  const endDraw = () => { drawing.current = false; };
+  const clearInk = () => { const canvas = canvasRef.current; canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); setHasInk(false); };
+  const sign = async () => {
+    if (!file) return;
+    if (!hasInk && !signedText.trim()) return setError('Draw a signature or enter text to add.');
+    setBusy(true); setError('');
+    try {
+      const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+      const pdf = await PDFDocument.load(await file.arrayBuffer());
+      const pages = pdf.getPages(), page = pageChoice === 'first' ? pages[0] : pages[pages.length - 1];
+      const { width, height } = page.getSize(), margin = 36, fontSize = 12;
+      const sigWidth = Math.min(size, width - margin * 2);
+      let sigImage = null, sigHeight = 0;
+      if (hasInk) {
+        const pngBytes = await fetch(canvasRef.current.toDataURL('image/png')).then(response => response.arrayBuffer());
+        sigImage = await pdf.embedPng(pngBytes);
+        sigHeight = (sigImage.height / sigImage.width) * sigWidth;
+      }
+      const textValue = signedText.trim(), font = await pdf.embedFont(StandardFonts.Helvetica);
+      const blockHeight = sigHeight + (sigImage && textValue ? 4 : 0) + (textValue ? fontSize + 2 : 0);
+      const isRight = position.includes('right'), isTop = position.includes('top');
+      const x = isRight ? width - margin - sigWidth : margin;
+      let topY = isTop ? height - margin : margin + blockHeight;
+      if (sigImage) { page.drawImage(sigImage, { x, y: topY - sigHeight, width: sigWidth, height: sigHeight }); topY -= sigHeight + 4; }
+      if (textValue) page.drawText(textValue, { x, y: topY - fontSize, size: fontSize, font, color: rgb(0.06, 0.09, 0.24) });
+      const bytes = await pdf.save();
+      setResult({ url: URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })), size: bytes.length, name: `${file.name.replace(/\.pdf$/i, '')}-signed.pdf` });
+    } catch (err) { setError(err.message || 'Could not sign this PDF.'); }
+    setBusy(false);
+  };
+  return <>{!file ? <FileDrop accept="application/pdf" onFiles={files => { setFile(files[0] || null); setResult(null); setError(''); }} title="Choose a PDF to sign" hint="Your document is processed locally and never uploaded"/> : <FileList files={[file]} onRemove={() => { setFile(null); setResult(null); }}/>}
+    {file && <>
+      <label className="sign-canvas-label">Draw your signature<canvas ref={canvasRef} width="600" height="200" className="sign-canvas" onMouseDown={startDraw} onMouseMove={moveDraw} onMouseUp={endDraw} onMouseLeave={endDraw} onTouchStart={startDraw} onTouchMove={moveDraw} onTouchEnd={endDraw}/></label>
+      <div className="sign-canvas-actions"><span>{hasInk ? 'Signature ready' : 'Sign in the box above'}</span><button className="button secondary compact" onClick={clearInk} disabled={!hasInk}>Clear</button></div>
+      <label className="textarea-label sign-text">Typed line <span>optional</span><input value={signedText} onChange={event => setSignedText(event.target.value)} placeholder="e.g. Jane Smith · 4 July 2026"/></label>
+      <div className="sign-options"><label>Page<select value={pageChoice} onChange={event => setPageChoice(event.target.value)}><option value="last">Last page</option><option value="first">First page</option></select></label><label>Position<select value={position} onChange={event => setPosition(event.target.value)}><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option><option value="top-right">Top right</option><option value="top-left">Top left</option></select></label><label>Signature width <strong>{size}px</strong><input type="range" min="100" max="320" value={size} onChange={event => setSize(Number(event.target.value))}/></label></div>
+      <button className="button primary pdf-action" onClick={sign} disabled={busy}>{busy ? 'Signing PDF…' : 'Sign & download'}</button>
+    </>}
+    {error && <p className="pdf-error">{error}</p>}
+    {result && <div className="pdf-result"><div><strong>Signed PDF ready</strong><span>{formatBytes(result.size)}</span></div><a className="button primary compact" href={result.url} download={result.name}>Download PDF</a></div>}
+    <p className="tool-footnote">Places your signature and text on the chosen page. For legally binding e-signatures, use a dedicated service with audit trails.</p></>;
+}
+
+function TextToSpeechTool() {
+  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const [text, setText] = useState('Hello! This text will be read aloud by your browser voice.');
+  const [voices, setVoices] = useState([]), [voiceName, setVoiceName] = useState('');
+  const [rate, setRate] = useState(1), [pitch, setPitch] = useState(1), [speaking, setSpeaking] = useState(false);
+  useEffect(() => {
+    if (!supported) return;
+    const load = () => { const list = window.speechSynthesis.getVoices(); setVoices(list); setVoiceName(current => current || list.find(voice => voice.default)?.name || list[0]?.name || ''); };
+    load();
+    window.speechSynthesis.addEventListener('voiceschanged', load);
+    return () => { window.speechSynthesis.removeEventListener('voiceschanged', load); window.speechSynthesis.cancel(); };
+  }, [supported]);
+  const speak = () => {
+    if (!text.trim()) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = voices.find(item => item.name === voiceName);
+    if (voice) utterance.voice = voice;
+    utterance.rate = rate; utterance.pitch = pitch;
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+    setSpeaking(true); window.speechSynthesis.speak(utterance);
+  };
+  const stop = () => { window.speechSynthesis.cancel(); setSpeaking(false); };
+  if (!supported) return <p className="pdf-error">Your browser does not support speech synthesis.</p>;
+  return <><label className="textarea-label">Text to read<textarea value={text} onChange={event => setText(event.target.value)} rows="6" placeholder="Type or paste text to read aloud…"/></label>
+    <div className="tts-controls"><label>Voice<select value={voiceName} onChange={event => setVoiceName(event.target.value)}>{voices.length ? voices.map(voice => <option key={voice.name} value={voice.name}>{voice.name} ({voice.lang})</option>) : <option>Loading voices…</option>}</select></label><label>Speed <strong>{rate.toFixed(1)}×</strong><input type="range" min="0.5" max="2" step="0.1" value={rate} onChange={event => setRate(Number(event.target.value))}/></label><label>Pitch <strong>{pitch.toFixed(1)}</strong><input type="range" min="0" max="2" step="0.1" value={pitch} onChange={event => setPitch(Number(event.target.value))}/></label></div>
+    <div className="tts-actions"><button className="button primary" onClick={speak} disabled={!text.trim()}><Icon name="spark"/> {speaking ? 'Restart' : 'Read aloud'}</button><button className="button secondary" onClick={stop} disabled={!speaking}>Stop</button></div>
+    <p className="tool-footnote">Uses the voices installed on your device. Availability and quality vary by browser and operating system.</p></>;
+}
+
+function AudioRecorderTool() {
+  const supported = typeof navigator !== 'undefined' && !!navigator.mediaDevices && typeof window !== 'undefined' && 'MediaRecorder' in window;
+  const [recording, setRecording] = useState(false), [audioUrl, setAudioUrl] = useState(''), [seconds, setSeconds] = useState(0), [error, setError] = useState(''), [maxMinutes, setMaxMinutes] = useState(5);
+  const recorderRef = useRef(null), chunksRef = useRef([]), streamRef = useRef(null), timerRef = useRef(null);
+  const cleanup = () => { clearInterval(timerRef.current); streamRef.current?.getTracks().forEach(track => track.stop()); streamRef.current = null; };
+  useEffect(() => () => { cleanup(); if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
+  const stop = () => { if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop(); clearInterval(timerRef.current); setRecording(false); };
+  const start = async () => {
+    setError('');
+    if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(''); }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream; chunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = event => { if (event.data.size) chunksRef.current.push(event.data); };
+      recorder.onstop = () => { const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' }); setAudioUrl(URL.createObjectURL(blob)); cleanup(); };
+      recorderRef.current = recorder; recorder.start();
+      setRecording(true); setSeconds(0);
+      const cap = maxMinutes * 60;
+      timerRef.current = setInterval(() => setSeconds(prev => { const next = prev + 1; if (next >= cap) stop(); return next; }), 1000);
+    } catch (err) { setError(err.name === 'NotAllowedError' ? 'Microphone permission was denied.' : 'Could not access the microphone.'); }
+  };
+  const clock = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+  if (!supported) return <p className="pdf-error">Your browser does not support audio recording.</p>;
+  return <><div className="recorder-stage"><div className={`recorder-dot ${recording ? 'live' : ''}`}/><strong>{clock(seconds)}</strong><span>{recording ? `Recording… auto-stops at ${maxMinutes}:00` : 'Ready to record'}</span></div>
+    <div className="recorder-options"><label>Max length<select value={maxMinutes} onChange={event => setMaxMinutes(Number(event.target.value))} disabled={recording}><option value="1">1 minute</option><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="30">30 minutes</option></select></label>{!recording ? <button className="button primary" onClick={start}>Start recording</button> : <button className="button primary recorder-stop" onClick={stop}>Stop recording</button>}</div>
+    {error && <p className="pdf-error">{error}</p>}
+    {audioUrl && !recording && <div className="recorder-result"><audio controls src={audioUrl}/><a className="button primary compact" href={audioUrl} download="recording.webm">Download audio</a></div>}
+    <p className="tool-footnote">Recording happens entirely in your browser and is never uploaded. Format is WebM, playable in most modern apps.</p></>;
+}
+
+function LocationTool() {
+  const supported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
+  const [status, setStatus] = useState('idle'), [coords, setCoords] = useState(null), [error, setError] = useState(''), [copied, setCopied] = useState(false);
+  const locate = () => {
+    setStatus('locating'); setError(''); setCopied(false);
+    navigator.geolocation.getCurrentPosition(
+      position => { setCoords({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy }); setStatus('done'); },
+      err => { setError(err.code === 1 ? 'Location permission was denied.' : 'Could not determine your location. Try again outdoors or with GPS enabled.'); setStatus('error'); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+  const copy = async () => { if (!coords) return; await navigator.clipboard?.writeText(`${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`); setCopied(true); };
+  if (!supported) return <p className="pdf-error">Your browser does not support geolocation.</p>;
+  return <><button className="button primary status-button" onClick={locate} disabled={status === 'locating'}>{status === 'locating' ? 'Locating…' : coords ? 'Update my location' : 'Find my location'}</button>
+    {error && <p className="pdf-error">{error}</p>}
+    {coords && <><div className="location-grid"><div><span>Latitude</span><strong>{coords.lat.toFixed(6)}</strong></div><div><span>Longitude</span><strong>{coords.lng.toFixed(6)}</strong></div><div><span>Accuracy</span><strong>±{Math.round(coords.accuracy)} m</strong></div></div><div className="location-actions"><button className="button secondary compact" onClick={copy}><Icon name={copied ? 'check' : 'copy'} size={18}/> {copied ? 'Copied' : 'Copy coordinates'}</button><a className="button primary compact" href={`https://www.openstreetmap.org/?mlat=${coords.lat}&mlon=${coords.lng}#map=16/${coords.lat}/${coords.lng}`} target="_blank" rel="noreferrer noopener">View on map</a></div></>}
+    <p className="tool-footnote">Coordinates come from your device and stay in your browser. Accuracy depends on GPS, Wi-Fi, and your hardware.</p></>;
+}
+
+function SystemInfoTool() {
+  const [ip, setIp] = useState('Loading…');
+  useEffect(() => {
+    let active = true;
+    fetch('https://api.ipify.org?format=json').then(response => response.json()).then(data => { if (active) setIp(data.ip); }).catch(() => { if (active) setIp('Unavailable'); });
+    return () => { active = false; };
+  }, []);
+  const info = useMemo(() => {
+    const nav = typeof navigator !== 'undefined' ? navigator : {}, agent = nav.userAgent || '';
+    const browser = /Edg\//.test(agent) ? 'Microsoft Edge' : /OPR\//.test(agent) ? 'Opera' : /Firefox\//.test(agent) ? 'Firefox' : /Chrome\//.test(agent) ? 'Chrome' : /Safari\//.test(agent) ? 'Safari' : 'Unknown';
+    const os = /Windows/.test(agent) ? 'Windows' : /Mac OS X/.test(agent) ? 'macOS' : /Android/.test(agent) ? 'Android' : /(iPhone|iPad|iPod)/.test(agent) ? 'iOS' : /Linux/.test(agent) ? 'Linux' : 'Unknown';
+    return {
+      browser, os,
+      language: nav.language || 'Unknown',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
+      screen: typeof window !== 'undefined' ? `${window.screen.width} × ${window.screen.height}` : 'Unknown',
+      viewport: typeof window !== 'undefined' ? `${window.innerWidth} × ${window.innerHeight}` : 'Unknown',
+      cores: nav.hardwareConcurrency ? `${nav.hardwareConcurrency} logical cores` : 'Unknown',
+      connection: nav.onLine === false ? 'Offline' : 'Online',
+    };
+  }, []);
+  const rows = [['Public IP', ip], ['Browser', info.browser], ['Operating system', info.os], ['Language', info.language], ['Time zone', info.timezone], ['Screen', info.screen], ['Window', info.viewport], ['CPU', info.cores], ['Network', info.connection]];
+  return <><div className="sysinfo-grid">{rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
+    <p className="tool-footnote">Your public IP is fetched from ipify.org; everything else is read from your browser. Nothing here is stored or sent to us.</p></>;
+}
+
 const rootElement = document.getElementById('root');
+
 const root = globalThis.__surrendaSoftRoot || createRoot(rootElement);
 globalThis.__surrendaSoftRoot = root;
 root.render(<React.StrictMode><App/></React.StrictMode>);
