@@ -34,6 +34,8 @@ const tools = [
   { id: 'scam', icon: '🛡️', name: 'Scam Email Checker', description: 'Paste a suspicious email to check for scam signals, phishing patterns, and dodgy links.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
   { id: 'seo', icon: '🔍', name: 'SEO Checker', description: 'Enter a URL to get a quick SEO audit via Google PageSpeed — title, meta, speed, and Core Web Vitals.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Developer'] },
   { id: 'calc', icon: '🧮', name: 'Calculator', description: 'A straightforward calculator for everyday arithmetic — add, subtract, multiply, divide.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
+  { id: 'utc', icon: '🕒', name: 'UTC Converter', description: 'Convert between local time and UTC. Shows Unix timestamp and ISO 8601 format — handy for developers.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
+  { id: 'tz', icon: '🌍', name: 'Time Zone Converter', description: 'Pick a time and source timezone to instantly see the equivalent across major world cities.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -68,6 +70,8 @@ const TOOL_FLAGS = {
   scam:       true, // Pattern-match email body for scam / phishing signals
   seo:        true, // Google PageSpeed SEO audit for a URL
   calc:       true, // Basic arithmetic calculator
+  utc:        true, // Local ↔ UTC converter + Unix timestamp + ISO 8601
+  tz:         true, // World time zone converter across major cities
 };
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
@@ -203,7 +207,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}{id === 'utc' && <UtcConverterTool/>}{id === 'tz' && <TimeZoneConverterTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -1102,6 +1106,98 @@ function CalculatorTool() {
       </div>)}
     </div>
   </div>;
+}
+
+function UtcConverterTool() {
+  const toLocalInput = d => { const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+  const toUtcInput = d => { const p = n => String(n).padStart(2,'0'); return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; };
+  const [local, setLocal] = useState(() => toLocalInput(new Date()));
+  const [utcVal, setUtcVal] = useState(() => toUtcInput(new Date()));
+  const [fromLocal, setFromLocal] = useState(true);
+  const now = () => { const d = new Date(); setLocal(toLocalInput(d)); setUtcVal(toUtcInput(d)); setFromLocal(true); };
+  const onLocalChange = v => { setLocal(v); setFromLocal(true); const d = new Date(v); if (!isNaN(d)) setUtcVal(toUtcInput(d)); };
+  const onUtcChange = v => { setUtcVal(v); setFromLocal(false); const d = new Date(v + 'Z'); if (!isNaN(d)) setLocal(toLocalInput(d)); };
+  const d = fromLocal ? new Date(local) : new Date(utcVal + 'Z');
+  const valid = !isNaN(d);
+  const unix = valid ? Math.floor(d.getTime() / 1000) : null;
+  const iso = valid ? d.toISOString() : null;
+  const offset = -new Date().getTimezoneOffset();
+  const offsetStr = `UTC${offset >= 0 ? '+' : ''}${Math.floor(offset/60)}:${String(Math.abs(offset%60)).padStart(2,'0')}`;
+  const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return <>
+    <div className="utc-grid">
+      <div className="utc-field"><label>Local time <span className="utc-tz">{tzName} ({offsetStr})</span><input type="datetime-local" value={local} onChange={e => onLocalChange(e.target.value)}/></label></div>
+      <div className="utc-eq">⇄</div>
+      <div className="utc-field"><label>UTC<input type="datetime-local" value={utcVal} onChange={e => onUtcChange(e.target.value)}/></label></div>
+    </div>
+    <button className="button secondary" style={{marginBottom:16}} onClick={now}>Use current time</button>
+    {valid && <div className="utc-results">
+      <div><span>Unix timestamp</span><strong>{unix}</strong></div>
+      <div><span>ISO 8601</span><strong style={{fontSize:13}}>{iso}</strong></div>
+      <div><span>UTC offset</span><strong>{offsetStr}</strong></div>
+      <div><span>UTC date</span><strong>{d.toUTCString()}</strong></div>
+    </div>}
+    <p className="tool-footnote">Conversions use your device’s local timezone. Unix timestamp is seconds since 1970-01-01T00:00:00Z.</p></>;
+}
+
+function TimeZoneConverterTool() {
+  const ZONES = [
+    { label: 'UTC',              tz: 'UTC' },
+    { label: 'London',           tz: 'Europe/London' },
+    { label: 'Paris / Berlin',   tz: 'Europe/Paris' },
+    { label: 'Dubai',            tz: 'Asia/Dubai' },
+    { label: 'Mumbai',           tz: 'Asia/Kolkata' },
+    { label: 'Singapore',        tz: 'Asia/Singapore' },
+    { label: 'Tokyo',            tz: 'Asia/Tokyo' },
+    { label: 'Shanghai',         tz: 'Asia/Shanghai' },
+    { label: 'Sydney',           tz: 'Australia/Sydney' },
+    { label: 'Auckland',         tz: 'Pacific/Auckland' },
+    { label: 'New York',         tz: 'America/New_York' },
+    { label: 'Chicago',          tz: 'America/Chicago' },
+    { label: 'Denver',           tz: 'America/Denver' },
+    { label: 'Los Angeles',      tz: 'America/Los_Angeles' },
+    { label: 'São Paulo',        tz: 'America/Sao_Paulo' },
+    { label: 'Honolulu',         tz: 'Pacific/Honolulu' },
+  ];
+  const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const [srcTz, setSrcTz] = useState(localTz);
+  const toInput = d => { const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+  const [input, setInput] = useState(() => toInput(new Date()));
+  const fmt = (date, tz) => { try { return new Intl.DateTimeFormat('en-AU', { timeZone: tz, weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true, timeZoneName:'short' }).format(date); } catch { return '—'; } };
+  const getOffset = tz => { try { const s = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName'); return s?.value || ''; } catch { return ''; } };
+  const srcDate = useMemo(() => { if (!input) return null; try { return new Date(new Intl.DateTimeFormat('en-CA', { timeZone: srcTz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }).format(new Date(input)).replace(/,/,'').replace(/\//g,'-').replace(' ','T') + '+00:00'); } catch { return null; } }, [input, srcTz]);
+  // simpler approach: treat datetime-local as src timezone by computing offset
+  const convert = useMemo(() => {
+    if (!input) return null;
+    // Build a Date by interpreting the input as being in srcTz
+    const naive = new Date(input); // treat as local; we'll offset
+    const localOffset = naive.getTimezoneOffset(); // minutes behind UTC
+    const srcOffsetMs = (() => { try { const now = naive; const utcStr = new Intl.DateTimeFormat('en-CA', { timeZone: srcTz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }).format(now); const interpreted = new Date(utcStr.replace(/\//g,'-').replace(', ','T')); return now - interpreted; } catch { return 0; } })();
+    const utcMs = naive.getTime() + naive.getTimezoneOffset() * 60000 + srcOffsetMs;
+    return new Date(utcMs);
+  }, [input, srcTz]);
+  const allZones = ZONES.some(z => z.tz === srcTz) ? ZONES : [{ label: 'Source', tz: srcTz }, ...ZONES];
+  return <>
+    <div className="tz-controls">
+      <label className="tz-label">Date &amp; time<input type="datetime-local" value={input} onChange={e => setInput(e.target.value)}/></label>
+      <label className="tz-label">Source timezone
+        <select value={srcTz} onChange={e => setSrcTz(e.target.value)}>
+          {[...new Set([localTz, ...ZONES.map(z => z.tz)])].map(tz => <option key={tz} value={tz}>{tz.replace(/_/g,' ')}</option>)}
+        </select>
+      </label>
+      <button className="button secondary" onClick={() => { setInput(toInput(new Date())); setSrcTz(localTz); }}>Now</button>
+    </div>
+    {convert && <div className="tz-results">
+      {allZones.map(z => {
+        const isSrc = z.tz === srcTz;
+        return <div key={z.tz} className={`tz-row${isSrc ? ' tz-src' : ''}`}>
+          <span className="tz-city">{z.label}</span>
+          <span className="tz-offset">{getOffset(z.tz)}</span>
+          <strong className="tz-time">{fmt(convert, z.tz)}</strong>
+        </div>;
+      })}
+    </div>}
+    <p className="tool-footnote">Uses your browser’s built-in timezone database. Daylight saving is applied automatically.</p></>;
 }
 
 const rootElement = document.getElementById('root');
