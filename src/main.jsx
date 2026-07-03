@@ -41,6 +41,7 @@ const tools = [
   { id: 'bgremove', icon: '✂️', name: 'Background Remover', description: 'Remove the background from product photos and portraits with edge flood-fill. No AI, no upload, runs locally.', tint: 'purple', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileconv', icon: '🔄', name: 'Image Converter', description: 'Convert images between JPG, PNG, and WebP. Adjust quality for JPEG and WebP. All conversion runs in your browser.', tint: 'blue', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileview', icon: '👁', name: 'File Viewer', description: 'Drop any file to view it: images, audio, video, PDF, text, code, JSON, CSV, HTML — or a hex dump for binary files. Edit text and download.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Developer', 'Utilities'] },
+  { id: 'suggest', icon: '💡', name: 'Suggest a Tool', description: "Need a tool we haven't built yet? Tell us what you need — we read every suggestion and it shapes what gets built next.", tint: 'yellow', status: 'Available', categories: ['Free'] },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -81,6 +82,7 @@ const TOOL_FLAGS = {
   bgremove:   true, // Edge flood-fill background removal → transparent PNG
   fileconv:   true, // Image format converter: JPG / PNG / WebP + quality control
   fileview:   true, // Universal file viewer: auto-detect + edit text + hex dump for binary
+  suggest:    true, // Suggest a tool you'd like us to build
 };
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
@@ -233,7 +235,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}{id === 'utc' && <UtcConverterTool/>}{id === 'tz' && <TimeZoneConverterTool/>}{id === 'qr' && <QrCodeTool/>}{id === 'bgremove' && <BgRemoverTool/>}{id === 'fileconv' && <FileConverterTool/>}{id === 'fileview' && <FileViewerTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}{id === 'utc' && <UtcConverterTool/>}{id === 'tz' && <TimeZoneConverterTool/>}{id === 'qr' && <QrCodeTool/>}{id === 'bgremove' && <BgRemoverTool/>}{id === 'fileconv' && <FileConverterTool/>}{id === 'fileview' && <FileViewerTool/>}{id === 'suggest' && <SuggestTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -1651,6 +1653,48 @@ function FileConverterTool() {
         </>
     }
     <p className="tool-footnote">Conversion uses the browser’s built-in canvas. PNG is lossless. Transparent images converted to JPEG get a white background. WebP may not be supported in older Safari versions.</p></>;
+}
+
+function SuggestTool() {
+  const [form, setForm] = useState({ name: '', email: '', toolName: '', details: '' });
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState('');
+  const upd = (f, v) => setForm(p => ({...p, [f]: v}));
+  const submit = e => {
+    e.preventDefault();
+    if (!form.toolName.trim()) { setErr('Please name the tool you need.'); return; }
+    setErr('');
+    const subject = encodeURIComponent(`Tool suggestion: ${form.toolName.trim()}`);
+    const body = encodeURIComponent([
+      form.name ? `From: ${form.name}${form.email ? ` <${form.email}>` : ''}` : '',
+      '',
+      `Tool requested: ${form.toolName.trim()}`,
+      '',
+      form.details.trim() || '(no details provided)',
+    ].join('\n').trimStart());
+    window.open(`mailto:hello@surrendasoft.com?subject=${subject}&body=${body}`);
+    setSent(true);
+  };
+  if (sent) return <div className="suggest-thanks">
+    <span>💡</span>
+    <h3>Thanks for the suggestion!</h3>
+    <p>Your email client should have opened. If it didn't, email us directly at <a href="mailto:hello@surrendasoft.com">hello@surrendasoft.com</a>.</p>
+    <button className="button secondary" onClick={() => { setSent(false); setForm({ name: '', email: '', toolName: '', details: '' }); }}>Send another</button>
+  </div>;
+  return <form className="suggest-form" onSubmit={submit} noValidate>
+    <p className="suggest-intro">Got an idea for a tool? Every suggestion is read — your feedback shapes what gets built next.</p>
+    <div className="field-row">
+      <label>Your name <span>optional</span><input value={form.name} onChange={e => upd('name', e.target.value)} placeholder="e.g. Alex"/></label>
+      <label>Your email <span>optional</span><input type="email" value={form.email} onChange={e => upd('email', e.target.value)} placeholder="so we can follow up"/></label>
+    </div>
+    <label style={{display:'flex',flexDirection:'column',gap:6}}>What tool do you need? <span style={{fontWeight:500,opacity:.6,fontSize:12}}>required</span><input value={form.toolName} onChange={e => upd('toolName', e.target.value)} placeholder="e.g. Mortgage calculator, colour picker, password generator…"/></label>
+    <label style={{display:'flex',flexDirection:'column',gap:6}}>Tell us more <span style={{fontWeight:500,opacity:.6,fontSize:12}}>optional</span><textarea rows="4" value={form.details} onChange={e => upd('details', e.target.value)} placeholder="What would you use it for? What inputs and outputs matter most?"/></label>
+    {err && <p className="pdf-error">{err}</p>}
+    <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
+      <button className="button primary" type="submit">Send suggestion <Icon name="arrow"/></button>
+      <p className="suggest-note">Opens your email client with your message pre-filled.</p>
+    </div>
+  </form>;
 }
 
 const rootElement = document.getElementById('root');
