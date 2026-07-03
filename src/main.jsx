@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import QRCode from 'qrcode';
 import { buildIcs, padCalendar } from './calendar.js';
 import './styles.css';
 
@@ -36,6 +37,7 @@ const tools = [
   { id: 'calc', icon: '🧮', name: 'Calculator', description: 'A straightforward calculator for everyday arithmetic — add, subtract, multiply, divide.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
   { id: 'utc', icon: '🕒', name: 'UTC Converter', description: 'Convert between local time and UTC. Shows Unix timestamp and ISO 8601 format — handy for developers.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
   { id: 'tz', icon: '🌍', name: 'Time Zone Converter', description: 'Pick a time and source timezone to instantly see the equivalent across major world cities.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
+  { id: 'qr', icon: '▦', name: 'QR Code Generator', description: 'Turn any URL, text, or contact detail into a scannable QR code. Download as PNG instantly.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -72,6 +74,7 @@ const TOOL_FLAGS = {
   calc:       true, // Basic arithmetic calculator
   utc:        true, // Local ↔ UTC converter + Unix timestamp + ISO 8601
   tz:         true, // World time zone converter across major cities
+  qr:         true, // QR code generator → PNG download
 };
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
@@ -207,7 +210,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}{id === 'utc' && <UtcConverterTool/>}{id === 'tz' && <TimeZoneConverterTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}{id === 'utc' && <UtcConverterTool/>}{id === 'tz' && <TimeZoneConverterTool/>}{id === 'qr' && <QrCodeTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -1198,6 +1201,39 @@ function TimeZoneConverterTool() {
       })}
     </div>}
     <p className="tool-footnote">Uses your browser’s built-in timezone database. Daylight saving is applied automatically.</p></>;
+}
+
+function QrCodeTool() {
+  const [text, setText] = useState('https://surrendasoft.com');
+  const [size, setSize] = useState(300);
+  const [margin, setMargin] = useState(2);
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    if (!canvasRef.current || !text.trim()) return;
+    QRCode.toCanvas(canvasRef.current, text.trim(), { width: size, margin }, err => { if (err) console.error(err); });
+  }, [text, size, margin]);
+  const download = () => {
+    if (!canvasRef.current) return;
+    const link = document.createElement('a');
+    link.download = 'qrcode.png';
+    link.href = canvasRef.current.toDataURL('image/png');
+    link.click();
+  };
+  return <>
+    <div className="qr-layout">
+      <div className="qr-controls">
+        <label className="textarea-label">Content (URL, text, phone, email…)<textarea value={text} onChange={e => setText(e.target.value)} rows="5" placeholder="https://example.com"/></label>
+        <div className="qr-options">
+          <label>Size<select value={size} onChange={e => setSize(Number(e.target.value))}><option value={200}>Small (200px)</option><option value={300}>Medium (300px)</option><option value={400}>Large (400px)</option><option value={600}>XL (600px)</option></select></label>
+          <label>Quiet zone<select value={margin} onChange={e => setMargin(Number(e.target.value))}><option value={1}>Minimal</option><option value={2}>Normal</option><option value={4}>Wide</option></select></label>
+        </div>
+        <button className="button primary" onClick={download} disabled={!text.trim()}>Download PNG</button>
+      </div>
+      <div className="qr-preview">
+        {text.trim() ? <canvas ref={canvasRef}/> : <div className="qr-empty">Enter content to generate</div>}
+      </div>
+    </div>
+    <p className="tool-footnote">QR codes are generated entirely in your browser. Nothing is sent to any server.</p></>;
 }
 
 const rootElement = document.getElementById('root');
