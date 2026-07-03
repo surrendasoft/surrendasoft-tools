@@ -1351,7 +1351,40 @@ function BgRemoverTool() {
 const FV_TEXT_EXTS = new Set(['txt','md','csv','json','xml','yaml','yml','toml','ini','cfg','log',
   'js','ts','jsx','tsx','mjs','cjs','py','css','html','htm','sh','bash','zsh','rb','php',
   'java','c','cpp','h','go','rs','swift','kt','sql','graphql','env','gitignore','nvmrc',
-  'editorconfig','prettierrc','eslintrc','babelrc','dockerfile','makefile']);
+  'editorconfig','prettierrc','eslintrc','babelrc','dockerfile','makefile','ics']);
+
+const fmtIcsDate = str => {
+  if (!str) return '';
+  const isAllDay = str.length === 8;
+  const clean = str.replace(/Z$/, '');
+  try {
+    if (isAllDay) return new Date(`${clean.slice(0,4)}-${clean.slice(4,6)}-${clean.slice(6,8)}`).toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'long',year:'numeric'});
+    const dt = `${clean.slice(0,4)}-${clean.slice(4,6)}-${clean.slice(6,8)}T${clean.slice(9,11)}:${clean.slice(11,13)}:${clean.slice(13,15)}${str.endsWith('Z')?'Z':''}`;
+    const d = new Date(dt);
+    return isNaN(d) ? str : d.toLocaleString('en-AU', {weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
+  } catch { return str; }
+};
+
+const parseIcs = text => {
+  const events = [];
+  const unfolded = text.replace(/\r\n[ \t]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blocks = unfolded.split('BEGIN:VEVENT');
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i].split('END:VEVENT')[0];
+    const props = {};
+    for (const line of block.split('\n')) {
+      const colon = line.indexOf(':');
+      if (colon < 0) continue;
+      const key = line.slice(0, colon).split(';')[0].toUpperCase().trim();
+      const val = line.slice(colon + 1).trim();
+      if (key && val) props[key] = val;
+    }
+    if (props.SUMMARY || props.DTSTART) events.push(props);
+  }
+  // sort by DTSTART
+  events.sort((a, b) => (a.DTSTART || '').localeCompare(b.DTSTART || ''));
+  return events;
+};
 
 function FileViewerTool() {
   const [file, setFile] = useState(null);
@@ -1406,6 +1439,8 @@ function FileViewerTool() {
   const ext = file ? getExt(file.name) : '';
   const lineCount = useMemo(() => textContent ? textContent.split('\n').length : 0, [textContent]);
 
+  const icsEvents = useMemo(() => ext === 'ics' && textContent ? parseIcs(textContent) : null, [ext, textContent]);
+
   const csvRows = useMemo(() => {
     if (ext !== 'csv' || !textContent) return null;
     return textContent.trim().split('\n').map(row => {
@@ -1455,7 +1490,7 @@ function FileViewerTool() {
     <div className="bgr-drop" onDrop={e=>{e.preventDefault();e.dataTransfer.files[0]&&load(e.dataTransfer.files[0]);}} onDragOver={e=>e.preventDefault()}>
       <span style={{fontSize:40}}>📂</span>
       <p>Drop any file or <u>browse</u></p>
-      <small>Text, code, JSON, CSV, HTML, images, audio, video, PDF — or binary hex dump</small>
+      <small>Text, code, JSON, CSV, HTML, ICS calendar, images, audio, video, PDF — or binary hex dump</small>
     </div>
   </label>;
 
@@ -1472,6 +1507,7 @@ function FileViewerTool() {
       </div>
       <div className="fv-acts">
         {ext === 'csv' && <button className="button secondary" style={view==='table'?btnOn:{}} onClick={()=>setView(v=>v==='table'?'raw':'table')}>Table view</button>}
+        {ext === 'ics' && <button className="button secondary" style={view==='calendar'?btnOn:{}} onClick={()=>setView(v=>v==='calendar'?'raw':'calendar')}>Calendar</button>}
         {(ext === 'html' || ext === 'htm') && <button className="button secondary" style={view==='preview'?btnOn:{}} onClick={()=>setView(v=>v==='preview'?'raw':'preview')}>Preview</button>}
         {ext === 'json' && <button className="button secondary" onClick={formatJson}>Format JSON</button>}
         {fileType === 'text' && <button className="button secondary" onClick={copyAll}><Icon name={copied?'check':'copy'} size={15}/>{copied?' Copied':' Copy all'}</button>}
@@ -1487,6 +1523,25 @@ function FileViewerTool() {
     {fileType === 'text' && view === 'raw' && <textarea className="fv-textarea" value={textContent} onChange={e=>{setTextContent(e.target.value);setEdited(true);}} spellCheck={false} aria-label="File contents — editable"/>}
     {fileType === 'text' && view === 'table' && csvRows && <div className="fv-table-wrap"><table className="fv-table"><thead><tr>{csvRows[0]?.map((h,i)=><th key={i}>{h||`Col ${i+1}`}</th>)}</tr></thead><tbody>{csvRows.slice(1).map((row,r)=><tr key={r}>{row.map((cell,c)=><td key={c}>{cell}</td>)}</tr>)}</tbody></table></div>}
     {fileType === 'text' && view === 'preview' && <iframe sandbox="allow-scripts" srcDoc={textContent} title="HTML preview" className="fv-preview-frame"/>}
+    {fileType === 'text' && view === 'calendar' && icsEvents && <div className="fv-cal">
+      {icsEvents.length === 0
+        ? <p className="fv-cal-empty">No events found in this calendar file.</p>
+        : icsEvents.map((ev, i) => <div key={i} className="fv-cal-event">
+            <div className="fv-cal-title">{ev.SUMMARY || '(No title)'}</div>
+            {ev.DTSTART && <div className="fv-cal-time">
+              {fmtIcsDate(ev.DTSTART)}{ev.DTEND && ev.DTEND !== ev.DTSTART ? ` → ${fmtIcsDate(ev.DTEND)}` : ''}
+            </div>}
+            <div className="fv-cal-meta">
+              {ev.LOCATION && <span>&#128205; {ev.LOCATION}</span>}
+              {ev.STATUS && <span>{ev.STATUS}</span>}
+              {ev.RRULE && <span>&#128257; Repeating</span>}
+              {ev.ORGANIZER && <span>&#128100; {ev.ORGANIZER.replace(/^.*CN=/,'').replace(/:.*/,'')}</span>}
+            </div>
+            {ev.DESCRIPTION && <div className="fv-cal-desc">{ev.DESCRIPTION.replace(/\\n/g,'\n').replace(/\\,/g,',')}</div>}
+          </div>)
+      }
+      <p className="fv-hex-note" style={{marginTop:4}}>{icsEvents.length} event{icsEvents.length !== 1?'s':''} · switch to raw view to edit</p>
+    </div>}
     {fileType === 'binary' && hexRows.length > 0 && <div className="fv-hex-outer">
       <p className="fv-hex-note">Hex dump — first {hexBytes.length} of {formatBytes(file.size)}</p>
       <div className="fv-hex">
