@@ -114,18 +114,15 @@ function App() {
 function Home({ onOpen }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
-  const [enabled, setEnabled] = useState(() => ({...TOOL_FLAGS}));
-  const [managing, setManaging] = useState(false);
-  const toggle = id => setEnabled(e => ({...e, [id]: !e[id]}));
   const visibleTools = useMemo(() => {
     const search = query.trim().toLowerCase();
     return tools.filter(tool => {
-      if (!enabled[tool.id]) return false;
+      if (!TOOL_FLAGS[tool.id]) return false;
       const matchesFilter = filter === 'All' || tool.categories.includes(filter);
       const searchable = `${tool.name} ${tool.description} ${tool.categories.join(' ')} ${tool.status}`.toLowerCase();
       return matchesFilter && (!search || searchable.includes(search));
     });
-  }, [query, filter, enabled]);
+  }, [query, filter]);
   return <>
     <section className="hero">
       <div className="hero-orb orb-one"/><div className="hero-orb orb-two"/>
@@ -139,8 +136,7 @@ function Home({ onOpen }) {
     </section>
 
     <section className="tools-section wrap" id="tools">
-      <div className="directory-controls"><label className="directory-search"><Icon name="search"/><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tools, e.g. PDF, invoice, emoji, AI…" aria-label="Search tools"/>{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={16}/></button>}</label><div className="filter-chips" role="group" aria-label="Filter tools by category">{directoryFilters.map(item => <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}>{item}</button>)}</div><button className={`manage-btn${managing ? ' active' : ''}`} onClick={() => setManaging(m => !m)} aria-label="Manage visible tools">⚙️ Manage</button></div>
-      {managing && <div className="manage-panel"><div className="manage-panel-header"><strong>Show / hide tools</strong><div className="manage-actions"><button onClick={() => setEnabled(Object.fromEntries(tools.map(t => [t.id, true])))}>Enable all</button><button onClick={() => setEnabled(Object.fromEntries(tools.map(t => [t.id, false])))}>Disable all</button></div></div><div className="manage-grid">{tools.map(t => <label key={t.id} className={`manage-toggle${enabled[t.id] ? '' : ' off'}`}><input type="checkbox" checked={!!enabled[t.id]} onChange={() => toggle(t.id)}/><span className="manage-icon">{t.icon}</span><span className="manage-name">{t.name}</span></label>)}</div></div>}
+      <div className="directory-controls"><label className="directory-search"><Icon name="search"/><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tools, e.g. PDF, invoice, emoji, AI…" aria-label="Search tools"/>{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={16}/></button>}</label><div className="filter-chips" role="group" aria-label="Filter tools by category">{directoryFilters.map(item => <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}>{item}</button>)}</div></div>
       <div className="section-heading directory-heading"><div><span className="kicker">TOOL DIRECTORY</span><h2>{filter === 'All' ? 'What do you need to do?' : filter}</h2></div><p>{visibleTools.length} {visibleTools.length === 1 ? 'tool' : 'tools'} · simple jobs that shouldn’t take all day.</p></div>
       {visibleTools.length ? <div className="tool-grid">{visibleTools.map(tool => <ToolCard key={tool.id} tool={tool} onOpen={onOpen}/>)}</div> : <div className="no-results"><span>⌕</span><h3>No tools found</h3><p>Try another search or category.</p><button onClick={() => { setQuery(''); setFilter('All'); }}>Show all tools</button></div>}
       <div className="more-tools"><span>More tools are on the way</span><p>PDF Compressor, Split PDF, Invoice Builder and more.</p></div>
