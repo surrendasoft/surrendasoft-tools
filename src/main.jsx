@@ -29,9 +29,11 @@ const tools = [
   { id: 'location', icon: '📍', name: 'My Location', description: 'Show your GPS coordinates and accuracy with a map link. Asks permission first.', tint: 'blue', status: 'Available', categories: ['Free', 'Utilities'] },
   { id: 'sysinfo', icon: 'IP', name: 'IP & System Info', description: 'See your public IP, browser, operating system, screen, timezone, and language.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
   { id: 'camera', icon: '📷', name: 'Camera', description: 'Take photos from your device camera, then pick which ones to download — or grab them all.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
+  { id: 'percent', icon: '%', name: 'Percentage Calculator', description: 'Work out percentages, find what percent one number is of another, and calculate percentage change.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Calculators'] },
+  { id: 'units', icon: '⇄', name: 'Unit Converter', description: 'Convert between metric and imperial units for length, weight, temperature, volume, speed, and area.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
 ];
 
-const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
+const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
 
 const emojis = [
   ['Smileys', '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😍','🥰','😎','🤓','🤩','🥳','😴','🤔','🫡','🤗','🙌'],
@@ -163,7 +165,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -833,6 +835,66 @@ function CameraTool() {
       <div className="camera-grid">{photos.map((p, i) => <div key={p.url} className={`camera-thumb ${p.selected ? 'sel' : ''}`} onClick={() => toggle(i)}><img src={p.url} alt={`Photo ${i + 1}`}/><div className="camera-thumb-bar"><span>{formatBytes(p.size)}</span><a href={p.url} download={p.name} onClick={e => e.stopPropagation()} className="camera-dl">↓</a><button onClick={e => { e.stopPropagation(); remove(i); }} className="camera-del">×</button></div><div className="camera-check">{p.selected ? '✓' : ''}</div></div>)}</div>
     </>}
     <p className="tool-footnote">Photos are taken in your browser and never uploaded. Tap a photo to select or deselect it before downloading.</p></>;
+}
+
+function PercentageTool() {
+  const [mode, setMode] = useState('of');
+  const [a, setA] = useState('25'), [b, setB] = useState('200'), [c, setC] = useState('80'), [d, setD] = useState('100'), [e, setE] = useState('50'), [f, setF] = useState('75');
+  const fmt = n => isFinite(n) ? (Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 4 })) : '—';
+  const resultOf = useMemo(() => { const pct = parseFloat(a), num = parseFloat(b); return isFinite(pct) && isFinite(num) ? fmt((pct / 100) * num) : '—'; }, [a, b]);
+  const resultIs = useMemo(() => { const num = parseFloat(c), total = parseFloat(d); return isFinite(num) && isFinite(total) && total !== 0 ? fmt((num / total) * 100) + '%' : '—'; }, [c, d]);
+  const resultChange = useMemo(() => { const from = parseFloat(e), to = parseFloat(f); if (!isFinite(from) || !isFinite(to) || from === 0) return { value: '—', label: '' }; const pct = ((to - from) / Math.abs(from)) * 100; return { value: fmt(Math.abs(pct)) + '%', label: pct >= 0 ? 'increase' : 'decrease' }; }, [e, f]);
+  return <>
+    <div className="sign-tabs pct-tabs"><button type="button" className={mode==='of'?'active':''} onClick={()=>setMode('of')}>X% of Y</button><button type="button" className={mode==='is'?'active':''} onClick={()=>setMode('is')}>What % is X of Y</button><button type="button" className={mode==='change'?'active':''} onClick={()=>setMode('change')}>% Change</button></div>
+    {mode === 'of' && <>
+      <div className="calculator-form pct-form"><label>Percentage<div className="calc-input-wrap"><input type="number" value={a} onChange={e=>setA(e.target.value)} inputMode="decimal" placeholder="25"/><span>%</span></div></label><label>of number<input type="number" value={b} onChange={e=>setB(e.target.value)} inputMode="decimal" placeholder="200"/></label></div>
+      <div className="pct-result"><span>Result</span><strong>{resultOf}</strong><p>{a}% of {b} = {resultOf}</p></div>
+    </>
+    }
+    {mode === 'is' && <>
+      <div className="calculator-form pct-form"><label>Number<input type="number" value={c} onChange={e=>setC(e.target.value)} inputMode="decimal" placeholder="80"/></label><label>out of<input type="number" value={d} onChange={e=>setD(e.target.value)} inputMode="decimal" placeholder="100"/></label></div>
+      <div className="pct-result"><span>Result</span><strong>{resultIs}</strong><p>{c} is {resultIs} of {d}</p></div>
+    </>
+    }
+    {mode === 'change' && <>
+      <div className="calculator-form pct-form"><label>From<input type="number" value={e} onChange={ev=>setE(ev.target.value)} inputMode="decimal" placeholder="50"/></label><label>To<input type="number" value={f} onChange={ev=>setF(ev.target.value)} inputMode="decimal" placeholder="75"/></label></div>
+      <div className="pct-result"><span>{resultChange.label || 'Change'}</span><strong>{resultChange.value}</strong><p>{e} → {f} is a {resultChange.value} {resultChange.label}</p></div>
+    </>
+    }
+    <p className="tool-footnote">All calculations happen instantly in your browser.</p></>;
+}
+
+function UnitConverterTool() {
+  const categories = {
+    Length:      { units: ['mm','cm','m','km','in','ft','yd','mi'], toBase: { mm:0.001, cm:0.01, m:1, km:1000, in:0.0254, ft:0.3048, yd:0.9144, mi:1609.344 } },
+    Weight:      { units: ['mg','g','kg','t','oz','lb','st'], toBase: { mg:0.000001, g:0.001, kg:1, t:1000, oz:0.0283495, lb:0.453592, st:6.35029 } },
+    Temperature: { units: ['°C','°F','K'], toBase: null },
+    Volume:      { units: ['ml','L','fl oz','cup','pt','qt','gal'], toBase: { ml:0.001, L:1, 'fl oz':0.0295735, cup:0.236588, pt:0.473176, qt:0.946353, gal:3.78541 } },
+    Speed:       { units: ['m/s','km/h','mph','knots'], toBase: { 'm/s':1, 'km/h':1/3.6, mph:0.44704, knots:0.514444 } },
+    Area:        { units: ['mm²','cm²','m²','km²','in²','ft²','acre','ha'], toBase: { 'mm²':0.000001, 'cm²':0.0001, 'm²':1, 'km²':1000000, 'in²':0.00064516, 'ft²':0.092903, acre:4046.86, ha:10000 } },
+  };
+  const catNames = Object.keys(categories);
+  const [cat, setCat] = useState('Length');
+  const { units } = categories[cat];
+  const [fromUnit, setFromUnit] = useState(units[0]), [toUnit, setToUnit] = useState(units[4]);
+  const [fromVal, setFromVal] = useState('1'), [toVal, setToVal] = useState('');
+  const convertTemp = (val, from, to) => { let c; if (from==='°C') c=val; else if (from==='°F') c=(val-32)/1.8; else c=val-273.15; if (to==='°C') return c; if (to==='°F') return c*1.8+32; return c+273.15; };
+  const convert = (val, from, to, cat) => { if (!isFinite(val)) return ''; if (cat==='Temperature') return convertTemp(val,from,to); const base = categories[cat].toBase; return val * base[from] / base[to]; };
+  const fmt = n => { if (!isFinite(n)) return ''; const abs = Math.abs(n); if (abs === 0) return '0'; if (abs < 0.0001 || abs >= 1e9) return n.toExponential(4); return parseFloat(n.toPrecision(7)).toString(); };
+  const onFromChange = val => { setFromVal(val); setToVal(fmt(convert(parseFloat(val), fromUnit, toUnit, cat))); };
+  const onToChange = val => { setToVal(val); setFromVal(fmt(convert(parseFloat(val), toUnit, fromUnit, cat))); };
+  const swap = () => { const newFrom = toUnit, newTo = fromUnit, newFromVal = toVal, newToVal = fromVal; setFromUnit(newFrom); setToUnit(newTo); setFromVal(newFromVal); setToVal(newToVal); };
+  const onCatChange = next => { const u = categories[next].units; setCat(next); setFromUnit(u[0]); setToUnit(u[next==='Temperature'?1:4] || u[1]); setFromVal('1'); setToVal(fmt(convert(1, u[0], u[next==='Temperature'?1:4]||u[1], next))); };
+  useEffect(() => { onFromChange(fromVal); }, [fromUnit, toUnit, cat]);
+  return <>
+    <div className="unit-cats">{catNames.map(n => <button key={n} type="button" className={cat===n?'active':''} onClick={()=>onCatChange(n)}>{n}</button>)}</div>
+    <div className="unit-row">
+      <div className="unit-field"><select value={fromUnit} onChange={e=>{setFromUnit(e.target.value);}} aria-label="From unit">{units.map(u=><option key={u}>{u}</option>)}</select><input type="number" value={fromVal} onChange={e=>onFromChange(e.target.value)} inputMode="decimal" placeholder="0" aria-label="Value to convert"/></div>
+      <button className="unit-swap" onClick={swap} aria-label="Swap units">⇄</button>
+      <div className="unit-field"><select value={toUnit} onChange={e=>{setToUnit(e.target.value);}} aria-label="To unit">{units.map(u=><option key={u}>{u}</option>)}</select><input type="number" value={toVal} onChange={e=>onToChange(e.target.value)} inputMode="decimal" placeholder="0" aria-label="Converted value"/></div>
+    </div>
+    <p className="unit-eq">{fromVal || '0'} {fromUnit} = <strong>{toVal || '0'} {toUnit}</strong></p>
+    <p className="tool-footnote">Conversions use standard international values. Temperature converts exactly. All calculations run locally.</p></>;
 }
 
 const rootElement = document.getElementById('root');
