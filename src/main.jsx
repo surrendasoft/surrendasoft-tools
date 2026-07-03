@@ -40,6 +40,7 @@ const tools = [
   { id: 'qr', icon: '▦', name: 'QR Code Generator', description: 'Turn any URL, text, or contact detail into a scannable QR code. Download as PNG instantly.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
   { id: 'bgremove', icon: '✂️', name: 'Background Remover', description: 'Remove the background from product photos and portraits with edge flood-fill. No AI, no upload, runs locally.', tint: 'purple', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileconv', icon: '🔄', name: 'Image Converter', description: 'Convert images between JPG, PNG, and WebP. Adjust quality for JPEG and WebP. All conversion runs in your browser.', tint: 'blue', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
+  { id: 'fileview', icon: '👁', name: 'File Viewer', description: 'Drop any file to view it: images, audio, video, PDF, text, code, JSON, CSV, HTML — or a hex dump for binary files. Edit text and download.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Developer', 'Utilities'] },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -79,6 +80,7 @@ const TOOL_FLAGS = {
   qr:         true, // QR code generator → PNG download
   bgremove:   true, // Edge flood-fill background removal → transparent PNG
   fileconv:   true, // Image format converter: JPG / PNG / WebP + quality control
+  fileview:   true, // Universal file viewer: auto-detect + edit text + hex dump for binary
 };
 
 const directoryFilters = ['All', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
@@ -214,7 +216,7 @@ function ToolPage({ id, onBack }) {
       <div className={`tool-icon large ${tool.tint}`}>{tool.icon}</div><span className="tool-label">FREE · BROWSER-BASED</span><h1>{tool.name}</h1><p>{tool.description}</p>
     </div></section>
     <section className="workspace-wrap wrap narrow"><div className="workspace">
-      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}{id === 'utc' && <UtcConverterTool/>}{id === 'tz' && <TimeZoneConverterTool/>}{id === 'qr' && <QrCodeTool/>}{id === 'bgremove' && <BgRemoverTool/>}{id === 'fileconv' && <FileConverterTool/>}
+      {id === 'emoji' && <EmojiTool/>}{id === 'dates' && <DateTool/>}{id === 'schedule' && <CalendarScheduleTool/>}{id === 'gst' && <GstTool/>}{id === 'cleaner' && <CleanerTool/>}{id === 'oneline' && <OneLineTool/>}{id === 'invoice' && <InvoiceTool/>}{id === 'case' && <CaseTool/>}{id === 'counter' && <WordCounterTool/>}{id === 'shrinker' && <ImageShrinkerTool/>}{id === 'html' && <HtmlViewerTool/>}{id === 'json' && <JsonFormatterTool/>}{id === 'imagepdf' && <ImageToPdfTool/>}{id === 'pdfimage' && <PdfToImageTool/>}{id === 'combinepdf' && <CombinePdfTool/>}{id === 'webstatus' && <WebsiteStatusTool/>}{id === 'speed' && <InternetSpeedTool/>}{id === 'hourly' && <HourlyRateTool/>}{id === 'margin' && <ProfitMarginTool/>}{id === 'signpdf' && <SignPdfTool/>}{id === 'tts' && <TextToSpeechTool/>}{id === 'recorder' && <AudioRecorderTool/>}{id === 'location' && <LocationTool/>}{id === 'sysinfo' && <SystemInfoTool/>}{id === 'camera' && <CameraTool/>}{id === 'percent' && <PercentageTool/>}{id === 'units' && <UnitConverterTool/>}{id === 'scam' && <ScamCheckerTool/>}{id === 'seo' && <SeoCheckerTool/>}{id === 'calc' && <CalculatorTool/>}{id === 'utc' && <UtcConverterTool/>}{id === 'tz' && <TimeZoneConverterTool/>}{id === 'qr' && <QrCodeTool/>}{id === 'bgremove' && <BgRemoverTool/>}{id === 'fileconv' && <FileConverterTool/>}{id === 'fileview' && <FileViewerTool/>}
     </div><div className="privacy-note"><Icon name="shield"/><div><strong>Your data stays with you</strong><p>This tool runs in your browser. Nothing you enter is uploaded or stored.</p></div></div></section>
   </>;
 }
@@ -1344,6 +1346,156 @@ function BgRemoverTool() {
         </>
     }
     <p className="tool-footnote">Edge flood-fill removal — no AI, no upload. Works best on plain backgrounds. Raise tolerance for gradients; lower it to keep fine edges. Download is a transparent PNG.</p></>;
+}
+
+const FV_TEXT_EXTS = new Set(['txt','md','csv','json','xml','yaml','yml','toml','ini','cfg','log',
+  'js','ts','jsx','tsx','mjs','cjs','py','css','html','htm','sh','bash','zsh','rb','php',
+  'java','c','cpp','h','go','rs','swift','kt','sql','graphql','env','gitignore','nvmrc',
+  'editorconfig','prettierrc','eslintrc','babelrc','dockerfile','makefile']);
+
+function FileViewerTool() {
+  const [file, setFile] = useState(null);
+  const [fileType, setFileType] = useState(null); // image|audio|video|pdf|text|binary
+  const [objUrl, setObjUrl] = useState(null);
+  const [textContent, setTextContent] = useState('');
+  const [edited, setEdited] = useState(false);
+  const [hexBytes, setHexBytes] = useState(null);
+  const [view, setView] = useState('raw'); // raw|table|preview
+  const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState('');
+
+  const getExt = name => name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+
+  const detect = f => {
+    const ext = getExt(f.name), mime = f.type || '';
+    if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','bmp','svg','ico','avif'].includes(ext)) return 'image';
+    if (mime.startsWith('audio/') || ['mp3','wav','ogg','flac','aac','m4a','opus'].includes(ext)) return 'audio';
+    if (mime.startsWith('video/') || ['mp4','webm','mov','avi','mkv','m4v'].includes(ext)) return 'video';
+    if (mime === 'application/pdf' || ext === 'pdf') return 'pdf';
+    if (mime.startsWith('text/') || FV_TEXT_EXTS.has(ext)) return 'text';
+    return 'unknown';
+  };
+
+  const reset = () => {
+    if (objUrl) URL.revokeObjectURL(objUrl);
+    setFile(null); setFileType(null); setObjUrl(null); setTextContent('');
+    setEdited(false); setHexBytes(null); setView('raw'); setErr('');
+  };
+
+  const load = async f => {
+    if (objUrl) URL.revokeObjectURL(objUrl);
+    setFile(f); setErr(''); setEdited(false); setHexBytes(null); setCopied(false); setView('raw');
+    const type = detect(f);
+    if (['image','audio','video','pdf'].includes(type)) {
+      setFileType(type); setObjUrl(URL.createObjectURL(f)); return;
+    }
+    try {
+      const text = await f.text();
+      if (text.includes('\x00')) throw new Error('binary');
+      const ext = getExt(f.name);
+      let display = text;
+      if (ext === 'json') { try { display = JSON.stringify(JSON.parse(text), null, 2); } catch {} }
+      setFileType('text'); setTextContent(display); setObjUrl(null);
+    } catch {
+      setFileType('binary');
+      try { const buf = await f.arrayBuffer(); setHexBytes(new Uint8Array(buf.slice(0, 512))); }
+      catch { setErr('Could not read file contents.'); }
+    }
+  };
+
+  const ext = file ? getExt(file.name) : '';
+  const lineCount = useMemo(() => textContent ? textContent.split('\n').length : 0, [textContent]);
+
+  const csvRows = useMemo(() => {
+    if (ext !== 'csv' || !textContent) return null;
+    return textContent.trim().split('\n').map(row => {
+      const cells = []; let cell = '', inQ = false;
+      for (const ch of row) {
+        if (ch === '"') inQ = !inQ;
+        else if (ch === ',' && !inQ) { cells.push(cell); cell = ''; }
+        else cell += ch;
+      }
+      cells.push(cell); return cells;
+    });
+  }, [ext, textContent]);
+
+  const hexRows = useMemo(() => {
+    if (!hexBytes) return [];
+    const rows = [];
+    for (let i = 0; i < hexBytes.length; i += 16) {
+      const chunk = hexBytes.slice(i, i + 16);
+      rows.push({
+        off: i.toString(16).padStart(8, '0'),
+        hex: Array.from(chunk).map(b => b.toString(16).padStart(2, '0')).join(' ').padEnd(47, ' '),
+        asc: Array.from(chunk).map(b => b >= 32 && b < 127 ? String.fromCharCode(b) : '\u00b7').join(''),
+      });
+    }
+    return rows;
+  }, [hexBytes]);
+
+  const download = () => {
+    const blob = new Blob([textContent], { type: file?.type || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const copyAll = async () => {
+    try { await navigator.clipboard.writeText(textContent); } catch {}
+    setCopied(true); setTimeout(() => setCopied(false), 1400);
+  };
+
+  const formatJson = () => {
+    try { setTextContent(JSON.stringify(JSON.parse(textContent), null, 2)); setEdited(true); setErr(''); }
+    catch { setErr('Invalid JSON — cannot format.'); }
+  };
+
+  if (!file) return <label className="bgr-upload-zone">
+    <input type="file" style={{display:'none'}} onChange={e => e.target.files[0] && load(e.target.files[0])}/>
+    <div className="bgr-drop" onDrop={e=>{e.preventDefault();e.dataTransfer.files[0]&&load(e.dataTransfer.files[0]);}} onDragOver={e=>e.preventDefault()}>
+      <span style={{fontSize:40}}>📂</span>
+      <p>Drop any file or <u>browse</u></p>
+      <small>Text, code, JSON, CSV, HTML, images, audio, video, PDF — or binary hex dump</small>
+    </div>
+  </label>;
+
+  const btnOn = { background:'#10183e', color:'#fff', borderColor:'#10183e' };
+
+  return <>
+    <div className="fv-bar">
+      <div className="fv-meta">
+        <span className="fv-ext">{(ext || '?').toUpperCase()}</span>
+        <strong className="fv-name">{file.name}</strong>
+        <span className="fv-dim">{formatBytes(file.size)}</span>
+        {fileType === 'text' && <span className="fv-dim">{lineCount} line{lineCount !== 1 ? 's' : ''}</span>}
+        {edited && <span className="fv-changed">&#9679; edited</span>}
+      </div>
+      <div className="fv-acts">
+        {ext === 'csv' && <button className="button secondary" style={view==='table'?btnOn:{}} onClick={()=>setView(v=>v==='table'?'raw':'table')}>Table view</button>}
+        {(ext === 'html' || ext === 'htm') && <button className="button secondary" style={view==='preview'?btnOn:{}} onClick={()=>setView(v=>v==='preview'?'raw':'preview')}>Preview</button>}
+        {ext === 'json' && <button className="button secondary" onClick={formatJson}>Format JSON</button>}
+        {fileType === 'text' && <button className="button secondary" onClick={copyAll}><Icon name={copied?'check':'copy'} size={15}/>{copied?' Copied':' Copy all'}</button>}
+        {fileType === 'text' && <button className="button primary" onClick={download}>Download{edited?' *':''}</button>}
+        <button className="button secondary" onClick={reset}>New file</button>
+      </div>
+    </div>
+    {err && <p className="pdf-error" style={{marginBottom:12}}>{err}</p>}
+    {fileType === 'image' && <div className="fv-img-wrap"><img src={objUrl} alt={file.name}/></div>}
+    {fileType === 'audio' && <div className="fv-media-wrap"><audio controls src={objUrl}/></div>}
+    {fileType === 'video' && <div className="fv-media-wrap"><video controls src={objUrl}/></div>}
+    {fileType === 'pdf' && <div className="fv-pdf-wrap"><iframe src={objUrl} title={file.name}/></div>}
+    {fileType === 'text' && view === 'raw' && <textarea className="fv-textarea" value={textContent} onChange={e=>{setTextContent(e.target.value);setEdited(true);}} spellCheck={false} aria-label="File contents — editable"/>}
+    {fileType === 'text' && view === 'table' && csvRows && <div className="fv-table-wrap"><table className="fv-table"><thead><tr>{csvRows[0]?.map((h,i)=><th key={i}>{h||`Col ${i+1}`}</th>)}</tr></thead><tbody>{csvRows.slice(1).map((row,r)=><tr key={r}>{row.map((cell,c)=><td key={c}>{cell}</td>)}</tr>)}</tbody></table></div>}
+    {fileType === 'text' && view === 'preview' && <iframe sandbox="allow-scripts" srcDoc={textContent} title="HTML preview" className="fv-preview-frame"/>}
+    {fileType === 'binary' && hexRows.length > 0 && <div className="fv-hex-outer">
+      <p className="fv-hex-note">Hex dump — first {hexBytes.length} of {formatBytes(file.size)}</p>
+      <div className="fv-hex">
+        <div className="fv-hex-head"><span>Offset</span><span>Hex (16 bytes/row)</span><span>ASCII</span></div>
+        {hexRows.map((row,i)=><div key={i} className="fv-hex-row"><span>{row.off}</span><span>{row.hex}</span><span>{row.asc}</span></div>)}
+      </div>
+      <p className="fv-hex-note" style={{marginTop:8}}>Binary file — open it in the appropriate application to view its full content.</p>
+    </div>}
+  </>;
 }
 
 function FileConverterTool() {
