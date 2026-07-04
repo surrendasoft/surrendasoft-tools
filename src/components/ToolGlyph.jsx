@@ -1,12 +1,12 @@
 import {
-  AlignLeft, ArrowLeftRight, ArrowRight, Bot, Braces, BriefcaseBusiness,
+  AlarmClock, AlignLeft, ArrowLeftRight, ArrowRight, Bot, Braces, BriefcaseBusiness,
   Calculator, CalendarPlus, CalendarRange, Camera, Check, Clock3, Code2,
   Crosshair, DollarSign, Earth, FileImage, FileSearch, FileText, Files,
   Fingerprint, FolderOpen, Gauge, GitCompare, Globe, GraduationCap,
   Image, ImageDown, Images, Lightbulb, Link2, MapPin, Mic, Monitor,
   Palette, PenLine, Percent, QrCode, RefreshCw, Scissors, Search,
   Settings, ShieldAlert, Siren, Smile, Sparkles, Star, TestTube2,
-  Text, Timer, TriangleAlert, Type, Volume2, Wrench, Zap,
+  Text, Timer, TriangleAlert, Type, Volume2, Watch, Wrench, Zap,
 } from 'lucide-react';
 
 const glyphs = {
@@ -26,6 +26,7 @@ const glyphs = {
   crosshair: Crosshair, warning: TriangleAlert, siren: Siren,
   palette: Palette, timer: Timer, gitCompare: GitCompare,
   testTube: TestTube2, link: Link2, fingerprint: Fingerprint,
+  alarmClock: AlarmClock, watch: Watch,
 };
 
 export default function ToolGlyph({ name, size = 24, strokeWidth = 2 }) {

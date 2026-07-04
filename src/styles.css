@@ -194,3 +194,46 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .new-badge{display:inline-flex;align-items:center;background:#2c5cc5;color:#fff;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 7px;border-radius:20px;text-transform:uppercase;margin-right:6px;line-height:1.5}
 /* New chip — teal accent to stand out from other filter chips */
 .filter-chips button.active[aria-pressed="true"][data-filter="New"]{background:#2c5cc5;border-color:#2c5cc5;color:#fff}
+
+/* ═══════════════════════════════════════════════════════════════════
+   COUNTDOWN TIMER
+   ════════════════════════════════════════════════════════════════ */
+.tmr-root{display:flex;flex-direction:column;align-items:center;gap:24px;padding:8px 0}
+.tmr-presets{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tmr-preset{border:1px solid #d6dee8;background:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:#6d788c;cursor:pointer;transition:background .12s,border-color .12s}
+.tmr-preset:hover{background:#edf4ff;border-color:#b6ceef;color:#1762bd}
+.tmr-inputs{display:flex;align-items:center;gap:4px}
+.tmr-inputs label{display:flex;flex-direction:column;align-items:center;gap:4px}
+.tmr-inputs label input{width:72px;text-align:center;font-size:24px;font-weight:800;color:#17203e;border:2px solid #d6dee8;border-radius:10px;padding:10px 6px;background:#fff;outline:none;-moz-appearance:textfield}
+.tmr-inputs label input::-webkit-outer-spin-button,.tmr-inputs label input::-webkit-inner-spin-button{-webkit-appearance:none}
+.tmr-inputs label input:focus{border-color:#4b83d0;box-shadow:0 0 0 3px #3f7ed315}
+.tmr-inputs label span{font-size:11px;font-weight:700;color:#8a93a3;text-transform:uppercase}
+.tmr-colon{font-size:28px;font-weight:300;color:#b0bac9;margin:0 2px;padding-bottom:18px}
+.tmr-ring-wrap{position:relative;width:160px;height:160px}
+.tmr-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.tmr-digits{font-size:32px;font-weight:800;color:#17203e;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+.tmr-done{font-size:28px;font-weight:800;color:#1f9c6a;letter-spacing:.02em}
+.tmr-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.tmr-main-btn{min-width:120px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STOPWATCH
+   ════════════════════════════════════════════════════════════════ */
+.sw-root{display:flex;flex-direction:column;align-items:center;gap:24px;padding:8px 0}
+.sw-display{display:flex;align-items:baseline;gap:0;line-height:1;user-select:none}
+.sw-main{font-size:52px;font-weight:800;color:#17203e;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.sw-centis{font-size:28px;font-weight:700;color:#8a93a3;font-variant-numeric:tabular-nums}
+.sw-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.sw-start-btn,.sw-stop-btn{min-width:120px}
+.sw-lap-btn{min-width:80px}
+.sw-laps{width:100%;border:1px solid #e2e7ed;border-radius:12px;overflow:hidden;font-size:13px}
+.sw-laps-header{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 14px;background:#f5f8ff;font-size:11px;font-weight:700;color:#8a93a3;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #e2e7ed}
+.sw-lap-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:10px 14px;border-bottom:1px solid #f0f3fb;font-variant-numeric:tabular-nums;background:#fff;transition:background .1s}
+.sw-lap-row:last-child{border-bottom:none}
+.sw-fastest{background:#edfaf5}
+.sw-slowest{background:#fff5f5}
+.sw-lap-n{display:flex;align-items:center;gap:6px;font-weight:700;color:#17203e}
+.sw-lap-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+.sw-lap-badge-fast{background:#d0f5e8;color:#0a7954}
+.sw-lap-badge-slow{background:#fdecea;color:#c0392b}
+.sw-lap-total{color:#8a93a3}

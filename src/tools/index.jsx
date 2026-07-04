@@ -44,6 +44,8 @@ const RegexTesterTool = lazy(() => import('./RegexTesterTool.jsx'));
 const UrlCoderTool = lazy(() => import('./UrlCoderTool.jsx'));
 const ExifViewerTool = lazy(() => import('./ExifViewerTool.jsx'));
 const CanvasFingerprintTool = lazy(() => import('./CanvasFingerprintTool.jsx'));
+const TimerTool = lazy(() => import('./TimerTool.jsx'));
+const StopwatchTool = lazy(() => import('./StopwatchTool.jsx'));
 
 export const toolComponents = {
   emoji: EmojiTool,
@@ -90,4 +92,6 @@ export const toolComponents = {
   urlcode: UrlCoderTool,
   exif: ExifViewerTool,
   canvas: CanvasFingerprintTool,
+  timer: TimerTool,
+  stopwatch: StopwatchTool,
 };
