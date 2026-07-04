@@ -1,0 +1,8 @@
+import { useState } from 'react';
+import Icon from '../components/Icon.jsx';
+
+export default function InvoiceTool() {
+  const [notes,setNotes]=useState('Installed new Wi-Fi router, configured guest network, connected 6 office computers and tested coverage.'); const [tone,setTone]=useState('Professional'); const [output,setOutput]=useState('');
+  const generate=()=>{ const value=notes.trim().replace(/[.!]+$/,''); if(!value)return; const prefix=tone==='Concise'?'Completed: ':tone==='Detailed'?'Services completed include: ':'Professional services provided: '; setOutput(prefix+value.charAt(0).toLowerCase()+value.slice(1)+'. All systems were tested and confirmed operational.'); };
+  return <><label className="textarea-label">What work did you complete?<textarea value={notes} onChange={e=>setNotes(e.target.value)} rows="6" placeholder="Enter rough job notes…"/></label><div className="field-row align-end"><label>Tone<select value={tone} onChange={e=>setTone(e.target.value)}><option>Professional</option><option>Concise</option><option>Detailed</option></select></label><button className="button primary" onClick={generate}><Icon name="spark"/> Generate description</button></div>{output&&<div className="output-box"><div><strong>Invoice-ready draft</strong><span>Generated locally</span></div><p>{output}</p><button onClick={()=>navigator.clipboard?.writeText(output)}><Icon name="copy" size={17}/> Copy text</button></div>}<div className="concept-note"><span>AI concept</span>This demo uses a local template. A future browser AI version could rewrite text privately on your device.</div></>;
+}
