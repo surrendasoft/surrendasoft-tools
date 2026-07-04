@@ -453,3 +453,19 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 /* Spinner animation */
 @keyframes wvt-rotate{to{transform:rotate(360deg)}}
 .wvt-spin{animation:wvt-rotate .7s linear infinite;display:inline-flex;align-items:center;flex-shrink:0;color:#4f7bdb}
+/* ── Scam Checker: AI check section ─────────────────────────── */
+.scam-btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.scam-ai-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:#1e2638;border:1.5px solid #4f7bdb;border-radius:10px;color:#a8c4f8;font-size:.88rem;font-weight:600;cursor:pointer;transition:background .2s,color .2s}
+.scam-ai-btn:hover:not(:disabled){background:#1e3a6e;color:#fff}
+.scam-ai-btn:disabled{opacity:.45;cursor:not-allowed}
+.scam-ai-unavail{font-size:.8rem;color:#888;margin:6px 0 0;line-height:1.5}
+.scam-ai-result{border:1.5px solid;border-radius:14px;padding:16px 18px;margin-top:16px}
+.scam-ai-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.scam-ai-tag{font:700 11px 'Manrope',sans-serif;background:#e8edfa;color:#3852a0;border-radius:6px;padding:3px 8px;white-space:nowrap}
+.scam-ai-conf{font-size:.75rem;color:#777;margin-left:auto}
+.scam-ai-summary{font-size:.88rem;color:#38445e;line-height:1.6;margin:0 0 6px}
+.scam-ai-flags{font-size:.82rem;color:#555;line-height:1.5;margin:0}
+.scam-ai-flabel{font-weight:700;color:#38445e}
+.scam-ai-error{margin-top:12px;padding:10px 14px;background:#fff0f0;border:1px solid #f5b8b8;border-radius:10px;font-size:.83rem;color:#b53e3e}
+@keyframes scam-spin{to{transform:rotate(360deg)}}
+.scam-ai-spin{display:inline-block;width:13px;height:13px;border:2px solid #4f7bdb;border-top-color:transparent;border-radius:50%;animation:scam-spin .7s linear infinite;flex-shrink:0}
