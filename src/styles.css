@@ -189,3 +189,8 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .cfp-explainer h3{font-size:14px;margin:0 0 10px;color:#17203e}
 .cfp-explainer ul{font-size:13px;color:#6d788c;line-height:1.7;margin:0 0 12px;padding-left:20px}
 .cfp-privacy-note{font-size:12px;color:#6d788c;margin:0;line-height:1.5}
+
+/* ── New badge on tool cards ──────────────────────────────────────── */
+.new-badge{display:inline-flex;align-items:center;background:#2c5cc5;color:#fff;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 7px;border-radius:20px;text-transform:uppercase;margin-right:6px;line-height:1.5}
+/* New chip — teal accent to stand out from other filter chips */
+.filter-chips button.active[aria-pressed="true"][data-filter="New"]{background:#2c5cc5;border-color:#2c5cc5;color:#fff}

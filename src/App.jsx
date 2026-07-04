@@ -69,7 +69,7 @@ function Home({ onOpen }) {
     const search = query.trim().toLowerCase();
     return tools.filter(tool => {
       if (!TOOL_FLAGS[tool.id]) return false;
-      const matchesFilter = filter === 'All' || tool.categories.includes(filter);
+      const matchesFilter = filter === 'All' || (filter === 'New' && tool.isNew) || tool.categories.includes(filter);
       const searchable = `${tool.name} ${tool.description} ${tool.categories.join(' ')} ${tool.status}`.toLowerCase();
       return matchesFilter && (!search || searchable.includes(search));
     });
@@ -112,7 +112,7 @@ function Home({ onOpen }) {
 function ToolCard({ tool, onOpen }) {
   return <article className="tool-card" onClick={() => onOpen(tool.id)}>
     <div className={`tool-icon ${tool.tint}`}><ToolGlyph name={tool.icon}/></div>
-    <div className="card-body"><div className="status"><span></span>{tool.status}</div><h3>{tool.name}</h3><p>{tool.description}</p></div>
+    <div className="card-body"><div className="status">{tool.isNew && <span className="new-badge">New</span>}<span></span>{tool.status}</div><h3>{tool.name}</h3><p>{tool.description}</p></div>
     <button className="card-arrow" aria-label={`Open ${tool.name}`}><Icon name="arrow"/></button>
     <div className="card-tags">{(tool.tags || ['Free', 'Browser-based', 'No login']).map(tag => <span key={tag}>{tag}</span>)}</div>
   </article>;
