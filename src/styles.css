@@ -411,3 +411,23 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .upb-compare-url{font-family:monospace;font-size:.8rem;word-break:break-all;line-height:1.6}
 .upb-old{color:#705050}
 .upb-new{color:#3de08a}
+/* ── URL Param Builder: explicit dark bg so text is visible ─── */
+.upb-param-list{background:#0d1017}
+.upb-param-row{background:#141824}
+.upb-param-row:hover{background:#111620}
+.upb-is-tracking{background:#1c1508!important}
+/* ── View Tester: custom inputs v2 + drag handle ─────────────── */
+.wvt-custom2{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;background:#141824;border:1px solid #2d3340;border-radius:8px}
+.wvt-dimfield{display:flex;align-items:center;gap:7px}
+.wvt-dimlabel{font-size:.72rem;font-weight:700;color:#8a93a3;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.wvt-diminput{width:96px;padding:8px 10px;background:#1a1f2e;border:1px solid #2d3340;border-radius:7px;color:#e2e8f0;font-size:.95rem;font-weight:600;text-align:center;outline:none;transition:border-color .2s}
+.wvt-diminput:focus{border-color:#4f7bdb}
+.wvt-dimunit{font-size:.75rem;color:#5a6480}
+.wvt-dimx{font-size:1.1rem;color:#3a4258}
+.wvt-drag-handle{position:absolute;top:0;right:0;width:10px;height:100%;cursor:ew-resize;z-index:20}
+.wvt-drag-handle::after{content:'';position:absolute;top:50%;right:2px;transform:translateY(-50%);width:3px;height:36px;background:rgba(79,123,219,.25);border-radius:2px;transition:background .15s}
+.wvt-drag-handle:hover::after{background:rgba(79,123,219,.8)}
+.wvt-drag-overlay{position:absolute;inset:0;z-index:15;cursor:ew-resize}
+.wvt-badge-row{display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding:0 2px}
+.wvt-reset-btn{padding:3px 10px;background:transparent;border:1px solid #2d3340;border-radius:5px;color:#6b7a99;font-size:.75rem;cursor:pointer;transition:border-color .15s,color .15s}
+.wvt-reset-btn:hover{border-color:#4f7bdb;color:#e2e8f0}
