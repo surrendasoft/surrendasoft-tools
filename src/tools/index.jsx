@@ -48,6 +48,7 @@ const TimerTool = lazy(() => import('./TimerTool.jsx'));
 const StopwatchTool = lazy(() => import('./StopwatchTool.jsx'));
 const MultiPageViewerTool = lazy(() => import('./MultiPageViewerTool.jsx'));
 const ViewTesterTool = lazy(() => import('./ViewTesterTool.jsx'));
+const UrlParamBuilderTool = lazy(() => import('./UrlParamBuilderTool.jsx'));
 
 export const toolComponents = {
   emoji: EmojiTool,
@@ -98,4 +99,5 @@ export const toolComponents = {
   stopwatch: StopwatchTool,
   multipage: MultiPageViewerTool,
   viewtest: ViewTesterTool,
+  urlparams: UrlParamBuilderTool,
 };

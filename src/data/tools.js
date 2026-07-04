@@ -47,6 +47,7 @@ export const tools = [
   { id: 'stopwatch', icon: 'watch', name: 'Stopwatch', description: 'Centisecond stopwatch with lap tracking. Highlights your fastest and slowest laps.', tint: 'mint', status: 'Available', categories: ['Free', 'Productivity', 'Utilities'], isNew: true },
   { id: 'multipage', icon: 'layoutGrid', name: 'Multi Page Viewer', description: 'Open multiple websites in a grid. Great for monitoring, comparing pages, or watching dashboards side by side. Blocked sites get a direct link instead.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities', 'Developer'], isNew: true },
   { id: 'viewtest', icon: 'monitor', name: 'Website View Tester', description: 'Preview any website at mobile, tablet, laptop, and desktop viewport sizes. Instantly see how a site looks across device widths.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Business'], isNew: true },
+  { id: 'urlparams', icon: 'link', name: 'URL Parameter Builder', description: 'Build, edit, and clean URL query parameters. Add UTM tracking, strip tracking params, and preview the before/after URL.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Business', 'Utilities'], isNew: true },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -99,6 +100,7 @@ export const TOOL_FLAGS = {
   stopwatch:  true, // Stopwatch — centisecond precision + lap tracking
   multipage:  true, // Multi Page Viewer — URL grid with iframe fallback
   viewtest:   true, // Website View Tester — iframe preview at multiple viewport sizes
+  urlparams:  true, // URL Parameter Builder — build/edit/clean query params + UTM quick fill
 };
 
 export const directoryFilters = ['All', 'New', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
