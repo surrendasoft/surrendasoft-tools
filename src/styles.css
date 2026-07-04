@@ -469,3 +469,8 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .scam-ai-error{margin-top:12px;padding:10px 14px;background:#fff0f0;border:1px solid #f5b8b8;border-radius:10px;font-size:.83rem;color:#b53e3e}
 @keyframes scam-spin{to{transform:rotate(360deg)}}
 .scam-ai-spin{display:inline-block;width:13px;height:13px;border:2px solid #4f7bdb;border-top-color:transparent;border-radius:50%;animation:scam-spin .7s linear infinite;flex-shrink:0}
+.scam-ai-setup{margin-top:10px;padding:12px 16px;background:#f0f4ff;border:1px solid #c6d0f0;border-radius:10px;font-size:.83rem;color:#2a3460;line-height:1.6}
+.scam-ai-setup strong{display:block;margin-bottom:6px;font-size:.85rem}
+.scam-ai-setup ol{margin:0;padding-left:18px}
+.scam-ai-setup li{margin-bottom:3px}
+.scam-ai-setup code{font-size:.78rem;background:#dde5fa;padding:1px 5px;border-radius:4px;font-family:monospace;user-select:all}

@@ -80,6 +80,7 @@ export default function ScamCheckerTool() {
   };
 
   const aiVm = { SCAM:{ label:'Likely a scam', col:'#b53e3e', bg:'#fff0f0', bd:'#f5b8b8' }, SUSPICIOUS:{ label:'Suspicious', col:'#a05c00', bg:'#fff8ec', bd:'#f5d896' }, SAFE:{ label:'Looks safe', col:'#08785f', bg:'#eaf9f4', bd:'#c6ebdf' } };
+  const isChrome = /Chrome\//.test(navigator.userAgent) && !/Edg\/|OPR\//.test(navigator.userAgent);
 
   return <>
     <div className="scam-form">
@@ -95,7 +96,18 @@ export default function ScamCheckerTool() {
       )}
     </div>
     {aiStatus === 'unavailable' && (
-      <p className="scam-ai-unavail">AI analysis is only available in Chrome at the moment.</p>
+      isChrome ? (
+        <div className="scam-ai-setup">
+          <strong>Enable Chrome's built-in AI to use this feature:</strong>
+          <ol>
+            <li>Paste <code>chrome://flags/#prompt-api-for-gemini-nano</code> into your address bar and set it to <strong>Enabled</strong></li>
+            <li>Relaunch Chrome — Chrome may download Gemini Nano (~1.7 GB) in the background</li>
+            <li>Return here and refresh the page</li>
+          </ol>
+        </div>
+      ) : (
+        <p className="scam-ai-unavail">AI analysis is only available in Chrome at the moment.</p>
+      )
     )}
     {result && <>
       <div className="scam-verdict" style={{ background: vm[result.verdict].bg, borderColor: vm[result.verdict].bd }}>
