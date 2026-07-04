@@ -46,6 +46,7 @@ export const tools = [
   { id: 'timer', icon: 'alarmClock', name: 'Countdown Timer', description: 'Set a countdown from hours down to seconds. Pick a preset or enter your own time — beeps three times when it hits zero.', tint: 'blue', status: 'Available', categories: ['Free', 'Productivity', 'Utilities'], isNew: true },
   { id: 'stopwatch', icon: 'watch', name: 'Stopwatch', description: 'Centisecond stopwatch with lap tracking. Highlights your fastest and slowest laps.', tint: 'mint', status: 'Available', categories: ['Free', 'Productivity', 'Utilities'], isNew: true },
   { id: 'multipage', icon: 'layoutGrid', name: 'Multi Page Viewer', description: 'Open multiple websites in a grid. Great for monitoring, comparing pages, or watching dashboards side by side. Blocked sites get a direct link instead.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities', 'Developer'], isNew: true },
+  { id: 'viewtest', icon: 'monitor', name: 'Website View Tester', description: 'Preview any website at mobile, tablet, laptop, and desktop viewport sizes. Instantly see how a site looks across device widths.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Business'], isNew: true },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -97,6 +98,7 @@ export const TOOL_FLAGS = {
   timer:      true, // Countdown Timer — h/m/s input with presets, beep on done
   stopwatch:  true, // Stopwatch — centisecond precision + lap tracking
   multipage:  true, // Multi Page Viewer — URL grid with iframe fallback
+  viewtest:   true, // Website View Tester — iframe preview at multiple viewport sizes
 };
 
 export const directoryFilters = ['All', 'New', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
