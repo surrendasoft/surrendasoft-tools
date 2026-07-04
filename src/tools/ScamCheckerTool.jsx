@@ -87,28 +87,7 @@ export default function ScamCheckerTool() {
       <label className="textarea-label">Sender email address <span>optional</span><input value={sender} onChange={e => setSender(e.target.value)} placeholder="e.g. noreply@amaz0n-support.com" type="text" autoComplete="off"/></label>
       <label className="textarea-label">Email body<textarea value={body} onChange={e => setBody(e.target.value)} rows="10" placeholder="Paste the email content here…"/></label>
     </div>
-    <div className="scam-btn-row">
-      <button className="button primary pdf-action" onClick={analyse} disabled={!body.trim()}>Check for scam signals</button>
-      {aiStatus === 'ready' && (
-        <button className="scam-ai-btn" onClick={runAiCheck} disabled={!body.trim() || aiLoading}>
-          {aiLoading ? <><span className="scam-ai-spin" /> Analysing…</> : <>✨ Check with AI</>}
-        </button>
-      )}
-    </div>
-    {aiStatus === 'unavailable' && (
-      isChrome ? (
-        <div className="scam-ai-setup">
-          <strong>Enable Chrome's built-in AI to use this feature:</strong>
-          <ol>
-            <li>Paste <code>chrome://flags/#prompt-api-for-gemini-nano</code> into your address bar and set it to <strong>Enabled</strong></li>
-            <li>Relaunch Chrome — Chrome may download Gemini Nano (~1.7 GB) in the background</li>
-            <li>Return here and refresh the page</li>
-          </ol>
-        </div>
-      ) : (
-        <p className="scam-ai-unavail">AI analysis is only available in Chrome at the moment.</p>
-      )
-    )}
+    <button className="button primary pdf-action" onClick={analyse} disabled={!body.trim()}>Check for scam signals</button>
     {result && <>
       <div className="scam-verdict" style={{ background: vm[result.verdict].bg, borderColor: vm[result.verdict].bd }}>
         <span style={{ color: vm[result.verdict].col }}><ToolGlyph name={vm[result.verdict].icon} size={22}/> {vm[result.verdict].label}</span>
@@ -121,19 +100,43 @@ export default function ScamCheckerTool() {
       </div>}
     </>
     }
-    {aiResult && !aiResult.error && (() => { const v = aiVm[aiResult.verdict] || aiVm.SUSPICIOUS; return (
-      <div className="scam-ai-result" style={{ background: v.bg, borderColor: v.bd }}>
-        <div className="scam-ai-header">
-          <span className="scam-ai-tag">✨ AI Analysis</span>
-          <strong style={{ color: v.col }}>{v.label}</strong>
-          {aiResult.confidence && <span className="scam-ai-conf">{aiResult.confidence} confidence</span>}
-        </div>
-        {aiResult.summary && <p className="scam-ai-summary">{aiResult.summary}</p>}
-        {aiResult.flags && !/^none/i.test(aiResult.flags) && (
-          <p className="scam-ai-flags"><span className="scam-ai-flabel">Red flags:</span> {aiResult.flags}</p>
-        )}
+    <div className="scam-ai-panel">
+      <div className="scam-ai-panel-header">
+        <span className="scam-ai-panel-title">✨ AI Analysis <span className="scam-ai-panel-badge">Chrome only</span></span>
+        <span className="scam-ai-panel-sub">On-device · private · no API key</span>
       </div>
-    ); })()}
-    {aiResult?.error && <div className="scam-ai-error">{aiResult.error}</div>}
-    <p className="tool-footnote">Pattern matching + on-device AI — not a substitute for professional security advice. Never click links or provide personal details to emails you are unsure about.</p></>;
+      {aiStatus === 'ready' && (
+        <button className="scam-ai-btn" onClick={runAiCheck} disabled={!body.trim() || aiLoading}>
+          {aiLoading ? <><span className="scam-ai-spin" /> Analysing…</> : <>Run AI check</>}
+        </button>
+      )}
+      {aiStatus === 'unavailable' && (
+        isChrome ? (
+          <div className="scam-ai-setup">
+            <strong>Enable Chrome's built-in AI to use this:</strong>
+            <ol>
+              <li>Paste <code>chrome://flags/#prompt-api-for-gemini-nano</code> into your address bar → set to <strong>Enabled</strong> → relaunch Chrome</li>
+              <li>Chrome will download Gemini Nano (~1.7 GB) in the background</li>
+              <li>Refresh this page</li>
+            </ol>
+          </div>
+        ) : (
+          <p className="scam-ai-unavail">AI analysis requires Chrome with Gemini Nano enabled.</p>
+        )
+      )}
+      {aiResult && !aiResult.error && (() => { const v = aiVm[aiResult.verdict] || aiVm.SUSPICIOUS; return (
+        <div className="scam-ai-result" style={{ background: v.bg, borderColor: v.bd }}>
+          <div className="scam-ai-header">
+            <strong style={{ color: v.col }}>{v.label}</strong>
+            {aiResult.confidence && <span className="scam-ai-conf">{aiResult.confidence} confidence</span>}
+          </div>
+          {aiResult.summary && <p className="scam-ai-summary">{aiResult.summary}</p>}
+          {aiResult.flags && !/^none/i.test(aiResult.flags) && (
+            <p className="scam-ai-flags"><span className="scam-ai-flabel">Red flags:</span> {aiResult.flags}</p>
+          )}
+        </div>
+      ); })()}
+      {aiResult?.error && <div className="scam-ai-error">{aiResult.error}</div>}
+    </div>
+    <p className="tool-footnote">Pattern matching + optional on-device AI — not a substitute for professional security advice. Never click links or provide personal details to emails you are unsure about.</p></>;
 }

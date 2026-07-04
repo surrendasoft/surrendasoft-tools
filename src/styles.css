@@ -474,3 +474,8 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .scam-ai-setup ol{margin:0;padding-left:18px}
 .scam-ai-setup li{margin-bottom:3px}
 .scam-ai-setup code{font-size:.78rem;background:#dde5fa;padding:1px 5px;border-radius:4px;font-family:monospace;user-select:all}
+.scam-ai-panel{margin-top:20px;border:1.5px solid #dde4f5;border-radius:14px;padding:16px 18px;background:#f8f9ff}
+.scam-ai-panel-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.scam-ai-panel-title{font-size:.88rem;font-weight:700;color:#2a3460;display:flex;align-items:center;gap:7px}
+.scam-ai-panel-badge{font-size:.68rem;font-weight:600;background:#e8edfa;color:#3852a0;border-radius:5px;padding:2px 7px}
+.scam-ai-panel-sub{font-size:.73rem;color:#8a93b8}
