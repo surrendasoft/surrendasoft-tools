@@ -86,7 +86,7 @@ export const TOOL_FLAGS = {
   bgremove:   true, // Edge flood-fill background removal → transparent PNG
   fileconv:   true, // Image format converter: JPG / PNG / WebP + quality control
   fileview:   true, // Universal file viewer: auto-detect + edit text + hex dump for binary
-  suggest:    true, // Suggest a tool you'd like us to build
+  suggest:    false, // Suggest a tool — hidden from directory, still reachable via no-results CTA
   colour:     true, // Colour Picker — HEX / RGB / HSL converter + WCAG contrast
   pomodoro:   true, // Pomodoro Timer — 25/5/15 focus sessions with audio beep
   diff:       true, // Text Diff — LCS line-level diff with add/remove highlighting
