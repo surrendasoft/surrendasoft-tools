@@ -479,3 +479,7 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .scam-ai-panel-title{font-size:.88rem;font-weight:700;color:#2a3460;display:flex;align-items:center;gap:7px}
 .scam-ai-panel-badge{font-size:.68rem;font-weight:600;background:#e8edfa;color:#3852a0;border-radius:5px;padding:2px 7px}
 .scam-ai-panel-sub{font-size:.73rem;color:#8a93b8}
+.scam-ai-enable{display:flex;flex-direction:column;gap:8px}
+.scam-ai-enable-btn{align-self:flex-start;padding:9px 16px;background:#1e2638;border:1.5px solid #4f7bdb;border-radius:9px;color:#a8c4f8;font-size:.85rem;font-weight:600;cursor:pointer;transition:background .2s,color .2s}
+.scam-ai-enable-btn:hover{background:#1e3a6e;color:#fff}
+.scam-ai-enable-hint{font-size:.8rem;color:#3852a0;margin:0;line-height:1.5}

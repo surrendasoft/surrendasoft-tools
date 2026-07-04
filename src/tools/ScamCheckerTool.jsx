@@ -6,6 +6,7 @@ export default function ScamCheckerTool() {
   const [aiStatus, setAiStatus] = useState('checking'); // 'checking' | 'ready' | 'unavailable'
   const [aiResult, setAiResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [flagCopied, setFlagCopied] = useState(false);
   const freeProviders = ['gmail.com','yahoo.com','hotmail.com','outlook.com','live.com','aol.com','icloud.com','protonmail.com','mail.com','ymail.com','msn.com'];
   const urlShorteners = ['bit.ly','tinyurl.com','goo.gl','t.co','ow.ly','buff.ly','short.io','rebrand.ly','cutt.ly','rb.gy'];
   const patterns = [
@@ -112,13 +113,15 @@ export default function ScamCheckerTool() {
       )}
       {aiStatus === 'unavailable' && (
         isChrome ? (
-          <div className="scam-ai-setup">
-            <strong>Enable Chrome's built-in AI to use this:</strong>
-            <ol>
-              <li>Paste <code>chrome://flags/#prompt-api-for-gemini-nano</code> into your address bar → set to <strong>Enabled</strong> → relaunch Chrome</li>
-              <li>Chrome will download Gemini Nano (~1.7 GB) in the background</li>
-              <li>Refresh this page</li>
-            </ol>
+          <div className="scam-ai-enable">
+            <button className="scam-ai-enable-btn" onClick={() => {
+              navigator.clipboard.writeText('chrome://flags/#prompt-api-for-gemini-nano');
+              setFlagCopied(true);
+              setTimeout(() => setFlagCopied(false), 3000);
+            }}>
+              {flagCopied ? '✓ Copied! Paste in your address bar' : '🛠️ Enable Chrome AI'}
+            </button>
+            {flagCopied && <p className="scam-ai-enable-hint">Set the flag to <strong>Enabled</strong>, relaunch Chrome, then refresh this page.</p>}
           </div>
         ) : (
           <p className="scam-ai-unavail">AI analysis requires Chrome with Gemini Nano enabled.</p>
