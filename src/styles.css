@@ -283,3 +283,36 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .mpv-blocked-sub{font-size:12px;color:#8a93a3;margin:0;line-height:1.5;max-width:240px}
 .mpv-blocked-btn{margin-top:4px}
 @media(max-width:640px){.mpv-grid{grid-template-columns:1fr!important}}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WEBSITE STATUS CHECKER (expanded)
+   ════════════════════════════════════════════════════════════════ */
+.wsc-card{border:1px solid #e2e7ed;border-radius:12px;overflow:hidden;margin-top:4px}
+.wsc-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px}
+.wsc-banner-up{background:#edfaf3;border-bottom:1px solid #c3eed9}
+.wsc-banner-warn{background:#fff9e8;border-bottom:1px solid #f0d880}
+.wsc-banner-down{background:#fdecea;border-bottom:1px solid #f5b7b1}
+.wsc-banner-body{display:flex;flex-direction:column;gap:2px}
+.wsc-banner-body strong{font-size:16px;font-weight:800;color:#17203e}
+.wsc-banner-up .wsc-banner-body strong{color:#0a5c38}
+.wsc-banner-warn .wsc-banner-body strong{color:#5c4000}
+.wsc-banner-down .wsc-banner-body strong{color:#7b1111}
+.wsc-banner-body span{font-size:13px;color:#8a93a3}
+.wsc-time-pill{background:#fff;border:1px solid #d6dee8;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;color:#17203e;white-space:nowrap;flex-shrink:0}
+.wsc-checks{display:flex;flex-direction:column;gap:0;padding:4px 0}
+.wsc-check-row{display:flex;align-items:baseline;gap:10px;padding:10px 18px;border-bottom:1px solid #f0f3fb;font-size:13px}
+.wsc-check-row:last-child{border-bottom:none}
+.wsc-check-icon{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;line-height:1}
+.wsc-check-pass .wsc-check-icon{background:#d0f5e8;color:#0a7954}
+.wsc-check-warn .wsc-check-icon{background:#fff0b0;color:#6d5500}
+.wsc-check-fail .wsc-check-icon{background:#fdecea;color:#c0392b}
+.wsc-check-label{font-weight:700;color:#17203e;min-width:100px;flex-shrink:0}
+.wsc-check-detail{color:#6d788c;flex:1}
+.wsc-timing{padding:10px 18px 12px;border-top:1px solid #f0f3fb;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wsc-timing-label{font-size:11px;font-weight:700;color:#8a93a3;text-transform:uppercase;letter-spacing:.04em;margin-right:4px}
+.wsc-timing-pills{display:flex;gap:6px;flex-wrap:wrap}
+.wsc-timing-pills span{background:#edf4ff;border:1px solid #c5d8f5;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;color:#1762bd;font-variant-numeric:tabular-nums}
+.wsc-limits{font-size:12px;color:#6d788c;border-top:1px solid #f0f3fb;padding:10px 18px}
+.wsc-limits summary{cursor:pointer;font-weight:600;color:#6d788c;font-size:12px}
+.wsc-limits ul{margin:8px 0 0;padding-left:18px;line-height:1.7}
+.wsc-limits li strong{color:#17203e}
