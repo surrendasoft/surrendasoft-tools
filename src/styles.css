@@ -431,3 +431,25 @@ footer{border-top:1px solid #e5e9ef;padding:46px 0;background:#fbfcfe}.footer-in
 .wvt-badge-row{display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding:0 2px}
 .wvt-reset-btn{padding:3px 10px;background:transparent;border:1px solid #2d3340;border-radius:5px;color:#6b7a99;font-size:.75rem;cursor:pointer;transition:border-color .15s,color .15s}
 .wvt-reset-btn:hover{border-color:#4f7bdb;color:#e2e8f0}
+/* ── View Tester UI enhancements ────────────────────────────────── */
+/* Preset buttons: device icon gap */
+.wvt-preset{gap:4px}
+/* Dismissible notice */
+.wvt-notice{display:flex;align-items:flex-start;gap:8px;justify-content:space-between}
+.wvt-notice-close{background:none;border:none;color:#7a6030;cursor:pointer;font-size:.8rem;padding:2px 4px;flex-shrink:0;line-height:1.4;opacity:.6;transition:opacity .15s}
+.wvt-notice-close:hover{opacity:1}
+/* Browser window wrapper — owns the outer border/radius */
+.wvt-window{width:100%;border:1px solid #2d3340;border-radius:10px;overflow:hidden;position:relative}
+/* Stage inside window: no double border */
+.wvt-window .wvt-stage{border:none;border-radius:0}
+/* Browser chrome bar */
+.wvt-chrome{display:flex;align-items:center;gap:10px;padding:0 12px;height:34px;background:#161b26;border-bottom:1px solid #252d3f;flex-shrink:0}
+.wvt-dots{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.wvt-dot{width:10px;height:10px;border-radius:50%;display:block;opacity:.88}
+.wvt-addr{flex:1;min-width:0;display:flex;align-items:center;gap:5px;background:#0d1118;border:1px solid #1e2638;border-radius:5px;padding:3px 9px;max-width:400px;margin:0 auto}
+.wvt-addr-text{font-size:.71rem;color:#8a93a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.wvt-addr-secure{color:#28c840;display:inline-flex;align-items:center;flex-shrink:0}
+.wvt-chrome-spacer{width:46px;flex-shrink:0}
+/* Spinner animation */
+@keyframes wvt-rotate{to{transform:rotate(360deg)}}
+.wvt-spin{animation:wvt-rotate .7s linear infinite;display:inline-flex;align-items:center;flex-shrink:0;color:#4f7bdb}
