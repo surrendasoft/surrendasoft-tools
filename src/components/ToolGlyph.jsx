@@ -3,7 +3,7 @@ import {
   Calculator, CalendarPlus, CalendarRange, Camera, Check, Clock3, Code2,
   Crosshair, DollarSign, Earth, FileImage, FileSearch, FileText, Files,
   Fingerprint, FolderOpen, Gauge, GitCompare, Globe, GraduationCap,
-  Image, ImageDown, Images, Lightbulb, Link2, MapPin, Mic, Monitor,
+  Image, ImageDown, Images, LayoutGrid, Lightbulb, Link2, MapPin, Mic, Monitor,
   Palette, PenLine, Percent, QrCode, RefreshCw, Scissors, Search,
   Settings, ShieldAlert, Siren, Smile, Sparkles, Star, TestTube2,
   Text, Timer, TriangleAlert, Type, Volume2, Watch, Wrench, Zap,
@@ -27,6 +27,7 @@ const glyphs = {
   palette: Palette, timer: Timer, gitCompare: GitCompare,
   testTube: TestTube2, link: Link2, fingerprint: Fingerprint,
   alarmClock: AlarmClock, watch: Watch,
+  layoutGrid: LayoutGrid,
 };
 
 export default function ToolGlyph({ name, size = 24, strokeWidth = 2 }) {

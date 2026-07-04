@@ -46,6 +46,7 @@ const ExifViewerTool = lazy(() => import('./ExifViewerTool.jsx'));
 const CanvasFingerprintTool = lazy(() => import('./CanvasFingerprintTool.jsx'));
 const TimerTool = lazy(() => import('./TimerTool.jsx'));
 const StopwatchTool = lazy(() => import('./StopwatchTool.jsx'));
+const MultiPageViewerTool = lazy(() => import('./MultiPageViewerTool.jsx'));
 
 export const toolComponents = {
   emoji: EmojiTool,
@@ -94,4 +95,5 @@ export const toolComponents = {
   canvas: CanvasFingerprintTool,
   timer: TimerTool,
   stopwatch: StopwatchTool,
+  multipage: MultiPageViewerTool,
 };

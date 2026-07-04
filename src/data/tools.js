@@ -45,6 +45,7 @@ export const tools = [
   { id: 'canvas', icon: 'fingerprint', name: 'Canvas Fingerprint', description: 'See how your browser renders a unique canvas fingerprint — and understand how sites can identify you without cookies.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Utilities'], isNew: true },
   { id: 'timer', icon: 'alarmClock', name: 'Countdown Timer', description: 'Set a countdown from hours down to seconds. Pick a preset or enter your own time — beeps three times when it hits zero.', tint: 'blue', status: 'Available', categories: ['Free', 'Productivity', 'Utilities'], isNew: true },
   { id: 'stopwatch', icon: 'watch', name: 'Stopwatch', description: 'Centisecond stopwatch with lap tracking. Highlights your fastest and slowest laps.', tint: 'mint', status: 'Available', categories: ['Free', 'Productivity', 'Utilities'], isNew: true },
+  { id: 'multipage', icon: 'layoutGrid', name: 'Multi Page Viewer', description: 'Open multiple websites in a grid. Great for monitoring, comparing pages, or watching dashboards side by side. Blocked sites get a direct link instead.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities', 'Developer'], isNew: true },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -95,6 +96,7 @@ export const TOOL_FLAGS = {
   canvas:     true, // Canvas Fingerprint — SHA-256 of rendered canvas pixels
   timer:      true, // Countdown Timer — h/m/s input with presets, beep on done
   stopwatch:  true, // Stopwatch — centisecond precision + lap tracking
+  multipage:  true, // Multi Page Viewer — URL grid with iframe fallback
 };
 
 export const directoryFilters = ['All', 'New', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
