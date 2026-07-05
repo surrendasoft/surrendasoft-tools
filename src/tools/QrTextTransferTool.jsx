@@ -144,9 +144,30 @@ function ReceivedText({ text, onClear }) {
   const [copied, setCopied] = useState('');
   const copyKey = async (value, key) => { await navigator.clipboard?.writeText(value); setCopied(key); window.setTimeout(() => setCopied(''), 1400); };
 
+  // Phone numbers: 7+ digits with optional formatting
   const rawPhones = text.match(/\+?[\d][\d\s\-().]{6,20}[\d]/g) || [];
   const phones = [...new Set(rawPhones.filter(p => (p.match(/\d/g) || []).length >= 7).map(p => p.trim()))];
+  // Emails
   const emails = [...new Set((text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || []).map(e => e.toLowerCase()))];
+  // URLs (http/https only, strip trailing punctuation)
+  const urls = [...new Set((text.match(/https?:\/\/[^\s<>"')\]]+/g) || []).map(u => u.replace(/[.,;:!?]+$/, '')))];
+  // OTP codes: 4–8 standalone digits, not a year, not already inside a phone number
+  const phoneDigitStrings = new Set(phones.flatMap(p => [...(p.match(/\d+/g) || [])]));
+  const otps = [...new Set([...text.matchAll(/(?:^|[\s:,#])(\d{4,8})(?=[\s:,.!?]|$)/gm)]
+    .map(m => m[1]).filter(n => !/^(19|20)\d{2}$/.test(n) && !phoneDigitStrings.has(n)))];
+
+  // Save contact as a .vcf vCard — iOS/Android/desktop all open it in their Contacts app
+  const saveContact = phone => {
+    const clean = phone.replace(/[^\d+]/g, '');
+    const vcf = `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${phone}\r\nTEL:${clean}\r\nEND:VCARD`;
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([vcf], { type: 'text/vcard;charset=utf-8' })),
+      download: `contact-${clean}.vcf`,
+    });
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+
+  const hasDetected = phones.length + emails.length + urls.length + otps.length > 0;
 
   return <div className="qrt-received">
     <div className="qrt-success-icon"><Icon name="check" size={32}/></div>
@@ -154,22 +175,48 @@ function ReceivedText({ text, onClear }) {
     <h2>Text transferred</h2>
     <p>Copy it on this device. The text was decoded locally from the QR link.</p>
     <div className="qrt-received-text">{text}</div>
-    {(phones.length > 0 || emails.length > 0) && (
+    {hasDetected && (
       <div className="qrt-contacts">
         <p className="qrt-contacts-label">Detected in this text</p>
         {phones.map((phone, i) => (
-          <button key={'p'+i} className="qrt-contact-btn" onClick={() => copyKey(phone, 'p'+i)}>
+          <div key={'p'+i} className="qrt-contact-row">
             <span className="qrt-contact-icon">📞</span>
             <span className="qrt-contact-val">{phone}</span>
-            <span className="qrt-contact-copy">{copied === 'p'+i ? '✓ Copied' : 'Copy number'}</span>
-          </button>
+            <div className="qrt-contact-actions">
+              <a className="qrt-act-btn" href={`tel:${phone.replace(/[\s\-().]/g,'')}`}>Call</a>
+              <button className="qrt-act-btn" onClick={() => saveContact(phone)}>Save contact</button>
+              <button className="qrt-act-btn" onClick={() => copyKey(phone,'p'+i)}>{copied==='p'+i?'✓':'Copy'}</button>
+            </div>
+          </div>
         ))}
         {emails.map((email, i) => (
-          <button key={'e'+i} className="qrt-contact-btn" onClick={() => copyKey(email, 'e'+i)}>
+          <div key={'e'+i} className="qrt-contact-row">
             <span className="qrt-contact-icon">✉️</span>
             <span className="qrt-contact-val">{email}</span>
-            <span className="qrt-contact-copy">{copied === 'e'+i ? '✓ Copied' : 'Copy email'}</span>
-          </button>
+            <div className="qrt-contact-actions">
+              <a className="qrt-act-btn qrt-act-primary" href={`mailto:${email}`}>Email</a>
+              <button className="qrt-act-btn" onClick={() => copyKey(email,'e'+i)}>{copied==='e'+i?'✓':'Copy'}</button>
+            </div>
+          </div>
+        ))}
+        {urls.map((url, i) => (
+          <div key={'u'+i} className="qrt-contact-row">
+            <span className="qrt-contact-icon">🔗</span>
+            <span className="qrt-contact-val">{url}</span>
+            <div className="qrt-contact-actions">
+              <a className="qrt-act-btn qrt-act-primary" href={url} target="_blank" rel="noreferrer noopener">Open</a>
+              <button className="qrt-act-btn" onClick={() => copyKey(url,'u'+i)}>{copied==='u'+i?'✓':'Copy'}</button>
+            </div>
+          </div>
+        ))}
+        {otps.map((otp, i) => (
+          <div key={'o'+i} className="qrt-contact-row">
+            <span className="qrt-contact-icon">🔑</span>
+            <span className="qrt-contact-val qrt-otp-val">{otp}</span>
+            <div className="qrt-contact-actions">
+              <button className="qrt-act-btn qrt-act-primary" onClick={() => copyKey(otp,'o'+i)}>{copied==='o'+i?'✓ Copied':'Copy code'}</button>
+            </div>
+          </div>
         ))}
       </div>
     )}
