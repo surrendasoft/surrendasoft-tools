@@ -78,3 +78,21 @@
 .qrt-kind-tabs button.active{background:#fff;color:#10183e;box-shadow:0 3px 12px #1c305216}
 .qrt-kind-tabs button:hover:not(.active){background:#f0f3f9;color:#3a4460}
 @media(min-width:500px){.qrt-kind-tabs{grid-template-columns:repeat(4,1fr)}}
+
+/* ── Multi-entry list chips ──────────────────────────────────────────── */
+.qrt-entry-list{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.qrt-entry-chip{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#f4f7ff;border:1.5px solid #dce4f5;border-radius:11px;cursor:pointer;transition:background .15s,border-color .15s;user-select:none}
+.qrt-entry-chip:hover:not(.active){background:#eef2ff;border-color:#b8c8f0}
+.qrt-entry-chip.active{background:#eef2ff;border:1.5px solid #7197d1;cursor:default}
+.qrt-ec-glyph{font-size:.9rem;flex-shrink:0;line-height:1}
+.qrt-ec-label{font:700 13px 'Manrope';color:#17203e;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qrt-ec-sub{font:500 11px 'Manrope';color:#788398;flex-shrink:0;white-space:nowrap}
+.qrt-ec-del{margin-left:4px;flex-shrink:0;width:22px;height:22px;border-radius:50%;border:0;background:transparent;color:#9aa3b8;font-size:1.1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+.qrt-ec-del:hover{background:#f0e0e0;color:#c0392b}
+
+/* ── Add another button ──────────────────────────────────────────────── */
+.qrt-add-entry-btn{display:flex;align-items:center;gap:7px;width:100%;padding:10px 14px;margin-top:4px;margin-bottom:2px;border:1.5px dashed #c5d1ee;border-radius:11px;background:transparent;color:#3852a0;font:700 12px 'Manrope';cursor:pointer;transition:background .15s,border-color .15s}
+.qrt-add-entry-btn:hover{background:#eef2ff;border-color:#7197d1}
+
+/* Multi-card spacing on received side */
+.qrt-contact-card+.qrt-contact-card,.qrt-event-card+.qrt-event-card{margin-top:10px}

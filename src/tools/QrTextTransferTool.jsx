@@ -4,7 +4,7 @@ import jsQR from 'jsqr';
 import Icon from '../components/Icon.jsx';
 import ToolGlyph from '../components/ToolGlyph.jsx';
 import { formatBytes } from '../utils/format.js';
-import { buildEventTransferUrl, buildFileTransfer, buildTransferUrl, buildVCard, condenseImageForQr, isCondensableImage, isEventTransferRoute, isFileTransferRoute, isSafeWebLink, isTextLikeFile, parseVCard, QR_FILE_SOURCE_LIMIT, QR_IMAGE_SOURCE_LIMIT, QR_TEXT_HARD_LIMIT, readEventPayload, readFileTransfer, readTransferPayload, validateTransferSource, validateTransferText } from '../utils/qrTextTransfer.js';
+import { buildEventTransferUrl, buildFileTransfer, buildTransferUrl, buildVCard, condenseImageForQr, isCondensableImage, isEventTransferRoute, isFileTransferRoute, isSafeWebLink, isTextLikeFile, parseAllVCards, parseVCard, QR_FILE_SOURCE_LIMIT, QR_IMAGE_SOURCE_LIMIT, QR_TEXT_HARD_LIMIT, readEventPayload, readFileTransfer, readTransferPayload, validateTransferSource, validateTransferText } from '../utils/qrTextTransfer.js';
 import { buildIcs } from '../calendar.js';
 import './QrTextTransferTool.css';
 import './QrTextTransferFile.css';
@@ -299,36 +299,43 @@ function ReceivedText({ text, onClear }) {
 
 // ── ReceivedContact ────────────────────────────────────────────────────────
 
+function ContactCard({ c }) {
+  const initials = (c.firstName?.[0] || c.fullName?.[0] || '?').toUpperCase();
+  return (
+    <div className="qrt-contact-card">
+      <div className="qrt-cc-avatar">{initials}</div>
+      <div className="qrt-cc-details">
+        {c.fullName && <strong className="qrt-cc-name">{c.fullName}</strong>}
+        {c.company && <span className="qrt-cc-company">{c.company}</span>}
+        {c.phone && <a className="qrt-cc-row" href={`tel:${c.phone.replace(/[\s\-().]/g,'')}`}><span>📞</span>{c.phone}</a>}
+        {c.email && <a className="qrt-cc-row" href={`mailto:${c.email}`}><span>✉️</span>{c.email}</a>}
+        {c.website && <a className="qrt-cc-row" href={c.website} target="_blank" rel="noreferrer noopener"><span>🌐</span>{c.website}</a>}
+        {c.note && <p className="qrt-cc-note">{c.note}</p>}
+      </div>
+    </div>
+  );
+}
+
 function ReceivedContact({ text, onClear }) {
-  const c = parseVCard(text);
+  const contacts = parseAllVCards(text);
+  const count = contacts.length;
   const downloadVcf = () => {
-    const name = [c.firstName, c.lastName].filter(Boolean).join('-') || 'contact';
+    const name = count === 1 ? ([contacts[0].firstName, contacts[0].lastName].filter(Boolean).join('-') || 'contact') : 'contacts';
     const a = Object.assign(document.createElement('a'), {
       href: URL.createObjectURL(new Blob([text], { type: 'text/vcard;charset=utf-8' })),
       download: `${name}.vcf`,
     });
     a.click(); URL.revokeObjectURL(a.href);
   };
-  const initials = (c.firstName?.[0] || c.fullName?.[0] || '?').toUpperCase();
   return (
     <div className="qrt-received">
       <div className="qrt-success-icon"><Icon name="check" size={32}/></div>
-      <span className="qrt-kicker">CONTACT RECEIVED</span>
-      <h2>{c.fullName || 'Contact'}</h2>
-      <p>Download to add this contact to your address book.</p>
-      <div className="qrt-contact-card">
-        <div className="qrt-cc-avatar">{initials}</div>
-        <div className="qrt-cc-details">
-          {c.fullName && <strong className="qrt-cc-name">{c.fullName}</strong>}
-          {c.company && <span className="qrt-cc-company">{c.company}</span>}
-          {c.phone && <a className="qrt-cc-row" href={`tel:${c.phone.replace(/[\s\-().]/g,'')}`}><span>📞</span>{c.phone}</a>}
-          {c.email && <a className="qrt-cc-row" href={`mailto:${c.email}`}><span>✉️</span>{c.email}</a>}
-          {c.website && <a className="qrt-cc-row" href={c.website} target="_blank" rel="noreferrer noopener"><span>🌐</span>{c.website}</a>}
-          {c.note && <p className="qrt-cc-note">{c.note}</p>}
-        </div>
-      </div>
+      <span className="qrt-kicker">{count > 1 ? `${count} CONTACTS RECEIVED` : 'CONTACT RECEIVED'}</span>
+      <h2>{count > 1 ? `${count} contacts` : (contacts[0].fullName || 'Contact')}</h2>
+      <p>Download to add {count > 1 ? 'these contacts' : 'this contact'} to your address book.</p>
+      {contacts.map((c, i) => <ContactCard key={i} c={c}/>)}
       <div className="qrt-received-actions">
-        <button className="button primary" onClick={downloadVcf}>📥 Download .vcf</button>
+        <button className="button primary" onClick={downloadVcf}>📥 Download .vcf{count > 1 ? ` (${count} contacts)` : ''}</button>
         <button className="button secondary" onClick={onClear}>Create another</button>
       </div>
       <p className="qrt-local-note"><Icon name="shield" size={17}/> Decoded locally. Tap Download to add to your Contacts app.</p>
@@ -337,6 +344,31 @@ function ReceivedContact({ text, onClear }) {
 }
 
 // ── ReceivedEvent ──────────────────────────────────────────────────────────
+
+function parseAllIcsEvents(icsText) {
+  const blocks = [...icsText.matchAll(/BEGIN:VEVENT([\s\S]*?)END:VEVENT/gi)];
+  if (blocks.length === 0) return [parseIcsEvent(icsText)];
+  return blocks.map(m => parseIcsEvent('BEGIN:VEVENT' + m[1] + 'END:VEVENT'));
+}
+
+function EventCard({ ev }) {
+  const { startDate, endDate, allDay, location, description, fmtDate, fmtTime } = ev;
+  return (
+    <div className="qrt-event-card">
+      {startDate && (
+        <div className="qrt-ec-row">
+          <span>📅</span>
+          <div>
+            <strong>{fmtDate(startDate)}</strong>
+            {allDay ? <span>All day</span> : (endDate && <span>{fmtTime(startDate)} – {fmtTime(endDate)}</span>)}
+          </div>
+        </div>
+      )}
+      {location && <div className="qrt-ec-row"><span>📍</span><div><strong>{location}</strong></div></div>}
+      {description && <div className="qrt-ec-row"><span>📝</span><div><p className="qrt-ec-desc">{description}</p></div></div>}
+    </div>
+  );
+}
 
 function parseIcsEvent(icsText) {
   const get = key => {
@@ -360,9 +392,10 @@ function parseIcsEvent(icsText) {
 }
 
 function ReceivedEvent({ icsText, onClear }) {
-  const { title, startDate, endDate, allDay, location, description, fmtDate, fmtTime } = parseIcsEvent(icsText);
+  const events = parseAllIcsEvents(icsText);
+  const count = events.length;
   const downloadIcs = () => {
-    const name = (title || 'event').replace(/\s+/g, '-').toLowerCase().slice(0, 50);
+    const name = count === 1 ? ((events[0].title || 'event').replace(/\s+/g, '-').toLowerCase().slice(0, 50)) : 'events';
     const a = Object.assign(document.createElement('a'), {
       href: URL.createObjectURL(new Blob([icsText], { type: 'text/calendar;charset=utf-8' })),
       download: `${name}.ics`,
@@ -372,24 +405,12 @@ function ReceivedEvent({ icsText, onClear }) {
   return (
     <div className="qrt-received">
       <div className="qrt-success-icon"><Icon name="check" size={32}/></div>
-      <span className="qrt-kicker">CALENDAR EVENT</span>
-      <h2>{title || 'Event'}</h2>
-      <p>Download this event to add it to your calendar app.</p>
-      <div className="qrt-event-card">
-        {startDate && (
-          <div className="qrt-ec-row">
-            <span>📅</span>
-            <div>
-              <strong>{fmtDate(startDate)}</strong>
-              {allDay ? <span>All day</span> : (endDate && <span>{fmtTime(startDate)} – {fmtTime(endDate)}</span>)}
-            </div>
-          </div>
-        )}
-        {location && <div className="qrt-ec-row"><span>📍</span><div><strong>{location}</strong></div></div>}
-        {description && <div className="qrt-ec-row"><span>📝</span><div><p className="qrt-ec-desc">{description}</p></div></div>}
-      </div>
+      <span className="qrt-kicker">{count > 1 ? `${count} CALENDAR EVENTS` : 'CALENDAR EVENT'}</span>
+      <h2>{count > 1 ? `${count} events` : (events[0].title || 'Event')}</h2>
+      <p>Download {count > 1 ? 'these events' : 'this event'} to add to your calendar app.</p>
+      {events.map((ev, i) => <EventCard key={i} ev={ev}/>)}
       <div className="qrt-received-actions">
-        <button className="button primary" onClick={downloadIcs}>📥 Download .ics</button>
+        <button className="button primary" onClick={downloadIcs}>📥 Download .ics{count > 1 ? ` (${count} events)` : ''}</button>
         <button className="button secondary" onClick={onClear}>Create another</button>
       </div>
       <p className="qrt-local-note"><Icon name="shield" size={17}/> Decoded locally. Tap Download to add to your Calendar app.</p>
@@ -399,17 +420,50 @@ function ReceivedEvent({ icsText, onClear }) {
 
 // ── CreateContactTransfer ──────────────────────────────────────────────────
 
+const BLANK_CONTACT = { firstName: '', lastName: '', phone: '', phoneType: 'CELL', email: '', company: '', website: '', note: '' };
+const MAX_CONTACTS = 5;
+const contactLabel = c => [c.firstName, c.lastName].filter(Boolean).join(' ') || c.phone || c.email || 'Unnamed';
+
 function CreateContactTransfer() {
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', phoneType: 'CELL', email: '', company: '', website: '', note: '' });
+  const [items, setItems]           = useState([{ ...BLANK_CONTACT }]);
+  const [active, setActive]         = useState(0);
+  const [form, setForm]             = useState({ ...BLANK_CONTACT });
   const [uploadedVcf, setUploadedVcf] = useState(null);
-  const [error, setError]   = useState('');
-  const [qrData, setQrData] = useState('');
-  const canvasRef = useRef(null);
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const [error, setError]           = useState('');
+  const [qrData, setQrData]         = useState('');
+  const canvasRef                   = useRef(null);
+  const setF = (k, v) => { setForm(f => ({ ...f, [k]: v })); setQrData(''); };
+
+  const allItems = items.map((it, i) => i === active ? form : it);
+
+  const switchTo = idx => {
+    setItems(prev => prev.map((it, i) => i === active ? { ...form } : it));
+    setActive(idx); setForm({ ...items[idx] }); setQrData('');
+  };
+
+  const addAnother = () => {
+    if (items.length >= MAX_CONTACTS) return;
+    const saved = items.map((it, i) => i === active ? { ...form } : it);
+    setItems([...saved, { ...BLANK_CONTACT }]);
+    setActive(saved.length); setForm({ ...BLANK_CONTACT }); setQrData('');
+  };
+
+  const removeItem = (idx, e) => {
+    e.stopPropagation();
+    const next = items.map((it, i) => i === active ? { ...form } : it).filter((_, i) => i !== idx);
+    if (!next.length) next.push({ ...BLANK_CONTACT });
+    setItems(next);
+    const na = Math.max(0, Math.min(active > idx ? active - 1 : active, next.length - 1));
+    setActive(na); setForm({ ...next[na] }); setQrData('');
+  };
+
+  const canGenerate = allItems.some(c => c.firstName || c.lastName || c.phone || c.email) || !!uploadedVcf;
+  const validItems  = allItems.filter(c => c.firstName || c.lastName || c.phone || c.email);
 
   const generate = () => {
-    if (!form.firstName && !form.lastName && !form.phone && !form.email) { setError('Enter at least a name, phone, or email.'); return; }
-    setError(''); setQrData(buildVCard(form));
+    if (uploadedVcf) return;
+    if (!validItems.length) { setError('Enter at least a name, phone, or email.'); return; }
+    setError(''); setQrData(validItems.map(buildVCard).join('\r\n'));
   };
 
   const handleUpload = async e => {
@@ -421,50 +475,82 @@ function CreateContactTransfer() {
 
   useEffect(() => {
     if (!qrData || !canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, qrData, { width: 320, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#10183e', light: '#ffffff' } },
-      err => err && setError('Contact data is too large for a QR code. Remove optional fields.'));
+    QRCode.toCanvas(canvasRef.current, qrData, { width: 320, margin: 2, errorCorrectionLevel: 'L', color: { dark: '#10183e', light: '#ffffff' } },
+      err => err && setError('Too much data for a QR code. Remove optional fields or split into separate QRs.'));
   }, [qrData]);
 
   const downloadVcf = () => {
-    const name = [form.firstName, form.lastName].filter(Boolean).join('-') || 'contact';
+    const name = validItems.length > 1 ? 'contacts' : ([validItems[0]?.firstName, validItems[0]?.lastName].filter(Boolean).join('-') || 'contact');
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([qrData], { type: 'text/vcard;charset=utf-8' })), download: `${name}.vcf` });
     a.click(); URL.revokeObjectURL(a.href);
   };
   const downloadQr = () => {
-    const name = [form.firstName, form.lastName].filter(Boolean).join('-') || 'contact';
-    const link = document.createElement('a'); link.download = `${name}-qr.png`; link.href = canvasRef.current.toDataURL('image/png'); link.click();
+    const link = document.createElement('a');
+    link.download = validItems.length > 1 ? 'contacts-qr.png' : 'contact-qr.png';
+    link.href = canvasRef.current.toDataURL('image/png'); link.click();
   };
 
   return (
     <div className={`qrt-create${qrData ? ' has-result' : ''}`}>
       <section className="qrt-compose">
-        <div className="qrt-section-label"><span>1</span><div><strong>Enter contact details</strong><small>iOS and Android cameras recognise this QR type and offer "Add to Contacts" — no app needed on the receiving end.</small></div></div>
+        <div className="qrt-section-label">
+          <span>1</span>
+          <div>
+            <strong>{items.length > 1 ? `${items.length} contacts` : 'Enter contact details'}</strong>
+            <small>iOS and Android cameras recognise this QR and offer "Add to Contacts" — no app needed.</small>
+          </div>
+        </div>
+        {allItems.length > 1 && (
+          <div className="qrt-entry-list">
+            {allItems.map((c, i) => (
+              <div key={i} className={`qrt-entry-chip${i === active ? ' active' : ''}`} onClick={() => i !== active && switchTo(i)}>
+                <span className="qrt-ec-glyph">👤</span>
+                <span className="qrt-ec-label">{contactLabel(c)}</span>
+                {(c.phone || c.email) && <span className="qrt-ec-sub">{c.phone || c.email}</span>}
+                <button className="qrt-ec-del" aria-label={`Remove contact ${i + 1}`} onClick={e => removeItem(i, e)}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="qrt-contact-form">
           <div className="qrt-form-row">
-            <div className="qrt-form-field"><label>First name</label><input value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="John"/></div>
-            <div className="qrt-form-field"><label>Last name</label><input value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Smith"/></div>
+            <div className="qrt-form-field"><label>First name</label><input value={form.firstName} onChange={e => setF('firstName', e.target.value)} placeholder="John"/></div>
+            <div className="qrt-form-field"><label>Last name</label><input value={form.lastName} onChange={e => setF('lastName', e.target.value)} placeholder="Smith"/></div>
           </div>
           <div className="qrt-form-row qrt-form-row-phone">
-            <div className="qrt-form-field"><label>Phone</label><input value={form.phone} onChange={e => set('phone', e.target.value)} type="tel" placeholder="+44 7700 900123"/></div>
-            <div className="qrt-form-field qrt-field-ptype"><label>Type</label><select value={form.phoneType} onChange={e => set('phoneType', e.target.value)}><option value="CELL">Mobile</option><option value="WORK">Work</option><option value="HOME">Home</option></select></div>
+            <div className="qrt-form-field"><label>Phone</label><input value={form.phone} onChange={e => setF('phone', e.target.value)} type="tel" placeholder="+44 7700 900123"/></div>
+            <div className="qrt-form-field qrt-field-ptype"><label>Type</label><select value={form.phoneType} onChange={e => setF('phoneType', e.target.value)}><option value="CELL">Mobile</option><option value="WORK">Work</option><option value="HOME">Home</option></select></div>
           </div>
-          <div className="qrt-form-field"><label>Email</label><input value={form.email} onChange={e => set('email', e.target.value)} type="email" placeholder="john@example.com"/></div>
-          <div className="qrt-form-field"><label>Company</label><input value={form.company} onChange={e => set('company', e.target.value)} placeholder="Acme Corp"/></div>
-          <div className="qrt-form-field"><label>Website</label><input value={form.website} onChange={e => set('website', e.target.value)} type="url" placeholder="https://example.com"/></div>
-          <div className="qrt-form-field"><label>Note</label><input value={form.note} onChange={e => set('note', e.target.value)} placeholder="Optional note…"/></div>
+          <div className="qrt-form-field"><label>Email</label><input value={form.email} onChange={e => setF('email', e.target.value)} type="email" placeholder="john@example.com"/></div>
+          <div className="qrt-form-field"><label>Company</label><input value={form.company} onChange={e => setF('company', e.target.value)} placeholder="Acme Corp"/></div>
+          <div className="qrt-form-field"><label>Website</label><input value={form.website} onChange={e => setF('website', e.target.value)} type="url" placeholder="https://example.com"/></div>
+          <div className="qrt-form-field"><label>Note</label><input value={form.note} onChange={e => setF('note', e.target.value)} placeholder="Optional note…"/></div>
         </div>
+        {items.length < MAX_CONTACTS && (
+          <button className="qrt-add-entry-btn" type="button" onClick={addAnother}>
+            <ToolGlyph name="userRound" size={14}/> Add another contact
+          </button>
+        )}
         <div className="qrt-upload-or"><span>or</span></div>
         <label className="qrt-file-upload-alt">
           <input type="file" accept=".vcf,.vcard" onChange={handleUpload}/>
           {uploadedVcf ? <><span>📋</span><strong>{uploadedVcf}</strong></> : <><span>📎</span><div><strong>Upload a .vcf file</strong><small>Existing contacts export</small></div></>}
         </label>
         {error && <p className="qrt-error">{error}</p>}
-        <button className="button primary qrt-generate" onClick={generate} disabled={!form.firstName && !form.lastName && !form.phone && !form.email && !uploadedVcf}><ToolGlyph name="qr" size={18}/> Generate contact QR</button>
-        <p className="qrt-tiny-explain">The QR encodes raw vCard data — scanning it with the device camera opens the native "Add Contact" screen instantly.</p>
+        <button className="button primary qrt-generate" onClick={generate} disabled={!canGenerate}>
+          <ToolGlyph name="qr" size={18}/> Generate contact QR
+        </button>
+        <p className="qrt-tiny-explain">Raw vCard inside the QR — natively recognised by iOS &amp; Android cameras.</p>
       </section>
       {qrData && (
         <section className="qrt-result" aria-label="Generated contact QR">
-          <div className="qrt-section-label"><span>2</span><div><strong>Scan to add contact</strong><small>Device camera offers "Add to Contacts" — no app needed.</small></div></div>
+          <div className="qrt-section-label">
+            <span>2</span>
+            <div>
+              <strong>Scan to add {validItems.length > 1 ? `${validItems.length} contacts` : 'contact'}</strong>
+              <small>Device camera offers "Add to Contacts" — no app needed.</small>
+            </div>
+          </div>
           <div className="qrt-code"><canvas ref={canvasRef}/></div>
           <p className="qrt-contains">Raw vCard inside this QR — natively recognised by iOS &amp; Android cameras.</p>
           <div className="qrt-actions">
@@ -479,35 +565,73 @@ function CreateContactTransfer() {
 
 // ── CreateEventTransfer ────────────────────────────────────────────────────
 
+const MAX_EVENTS = 5;
+const blankEvent = today => ({ title: '', date: today, startTime: '09:00', endTime: '10:00', allDay: false, location: '', description: '' });
+const eventLabel = e => e.title || 'Untitled event';
+const eventSub   = e => {
+  if (!e.date) return '';
+  const d = new Date(e.date + 'T12:00:00');
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + (e.allDay ? '' : ` · ${e.startTime}`);
+};
+
 function CreateEventTransfer() {
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({ title: '', date: today, startTime: '09:00', endTime: '10:00', allDay: false, location: '', description: '' });
+  const [items, setItems]           = useState([blankEvent(today)]);
+  const [active, setActive]         = useState(0);
+  const [form, setForm]             = useState(blankEvent(today));
   const [uploadedIcs, setUploadedIcs] = useState(null);
-  const [error, setError]   = useState('');
-  const [result, setResult] = useState(null); // { url, icsText }
-  const [copied, setCopied] = useState(false);
-  const canvasRef = useRef(null);
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const [error, setError]           = useState('');
+  const [result, setResult]         = useState(null);
+  const [copied, setCopied]         = useState(false);
+  const canvasRef                   = useRef(null);
+  const setF = (k, v) => { setForm(f => ({ ...f, [k]: v })); setResult(null); };
 
-  const buildIcsText = () => {
-    const [yr, mo, dy] = form.date.split('-').map(Number);
-    if (form.allDay) {
-      const start = new Date(yr, mo - 1, dy, 0, 0, 0);
-      const end   = new Date(yr, mo - 1, dy + 1, 0, 0, 0);
-      return buildIcs([{ title: form.title, start, end, allDay: true, location: form.location, description: form.description }]);
+  const allItems = items.map((it, i) => i === active ? form : it);
+
+  const switchTo = idx => {
+    setItems(prev => prev.map((it, i) => i === active ? { ...form } : it));
+    setActive(idx); setForm({ ...items[idx] }); setResult(null);
+  };
+
+  const addAnother = () => {
+    if (items.length >= MAX_EVENTS) return;
+    const saved = items.map((it, i) => i === active ? { ...form } : it);
+    setItems([...saved, blankEvent(today)]);
+    setActive(saved.length); setForm(blankEvent(today)); setResult(null);
+  };
+
+  const removeItem = (idx, e) => {
+    e.stopPropagation();
+    const next = items.map((it, i) => i === active ? { ...form } : it).filter((_, i) => i !== idx);
+    if (!next.length) next.push(blankEvent(today));
+    setItems(next);
+    const na = Math.max(0, Math.min(active > idx ? active - 1 : active, next.length - 1));
+    setActive(na); setForm({ ...next[na] }); setResult(null);
+  };
+
+  const buildAllIcs = () => {
+    const events = [];
+    for (const f of allItems) {
+      if (!f.title.trim()) continue;
+      const [yr, mo, dy] = f.date.split('-').map(Number);
+      if (f.allDay) {
+        events.push({ title: f.title, start: new Date(yr, mo - 1, dy, 0, 0, 0), end: new Date(yr, mo - 1, dy + 1, 0, 0, 0), allDay: true, location: f.location, description: f.description });
+      } else {
+        const [sh, sm] = f.startTime.split(':').map(Number);
+        const [eh, em] = f.endTime.split(':').map(Number);
+        const start = new Date(yr, mo - 1, dy, sh, sm, 0);
+        const end   = new Date(yr, mo - 1, dy, eh, em, 0);
+        if (end <= start) { setError(`"${f.title}": end time must be after start time.`); return null; }
+        events.push({ title: f.title, start, end, location: f.location, description: f.description });
+      }
     }
-    const [sh, sm] = form.startTime.split(':').map(Number);
-    const [eh, em] = form.endTime.split(':').map(Number);
-    const start = new Date(yr, mo - 1, dy, sh, sm, 0);
-    const end   = new Date(yr, mo - 1, dy, eh, em, 0);
-    if (end <= start) { setError('End time must be after start time.'); return null; }
-    return buildIcs([{ title: form.title, start, end, location: form.location, description: form.description }]);
+    if (!events.length) { setError('Enter at least one event title.'); return null; }
+    return buildIcs(events);
   };
 
   const generate = () => {
-    if (!form.title.trim()) { setError('Enter an event title.'); return; }
-    if (!form.date) { setError('Select a date.'); return; }
-    const icsText = buildIcsText();
+    if (uploadedIcs) return;
+    const icsText = buildAllIcs();
     if (!icsText) return;
     setError(''); setCopied(false);
     setResult({ url: buildEventTransferUrl(icsText), icsText });
@@ -524,53 +648,84 @@ function CreateEventTransfer() {
 
   useEffect(() => {
     if (!result?.url || !canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, result.url, { width: 320, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#10183e', light: '#ffffff' } },
-      err => err && setError('Event data is too large for a QR code. Shorten the description or location.'));
+    QRCode.toCanvas(canvasRef.current, result.url, { width: 320, margin: 2, errorCorrectionLevel: 'L', color: { dark: '#10183e', light: '#ffffff' } },
+      err => err && setError('Event data is too large for a QR code. Shorten descriptions or split into separate QRs.'));
   }, [result]);
 
+  const validCount = allItems.filter(e => e.title.trim()).length;
+  const canGenerate = allItems.some(e => e.title.trim()) || !!uploadedIcs;
+
   const downloadIcs = () => {
-    const name = (form.title || uploadedIcs?.replace(/\.ics$/i, '') || 'event').replace(/\s+/g, '-').toLowerCase().slice(0, 50);
+    const name = validCount > 1 ? 'events' : ((allItems.find(e => e.title)?.title || uploadedIcs?.replace(/\.ics$/i, '') || 'event').replace(/\s+/g, '-').toLowerCase().slice(0, 50));
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([result.icsText], { type: 'text/calendar;charset=utf-8' })), download: `${name}.ics` });
     a.click(); URL.revokeObjectURL(a.href);
   };
-  const downloadQr = () => {
-    const name = (form.title || 'event').replace(/\s+/g, '-').toLowerCase().slice(0, 50);
-    const link = document.createElement('a'); link.download = `${name}-qr.png`; link.href = canvasRef.current.toDataURL('image/png'); link.click();
-  };
+  const downloadQr = () => { const link = document.createElement('a'); link.download = 'event-qr.png'; link.href = canvasRef.current.toDataURL('image/png'); link.click(); };
   const copyLink = async () => { await navigator.clipboard?.writeText(result.url); setCopied(true); window.setTimeout(() => setCopied(false), 1400); };
 
   return (
     <div className={`qrt-create${result ? ' has-result' : ''}`}>
       <section className="qrt-compose">
-        <div className="qrt-section-label"><span>1</span><div><strong>Enter event details</strong><small>Scanning the QR opens this app with a one-tap calendar download.</small></div></div>
+        <div className="qrt-section-label">
+          <span>1</span>
+          <div>
+            <strong>{items.length > 1 ? `${items.length} events` : 'Enter event details'}</strong>
+            <small>Scanning the QR opens this app with a one-tap calendar download.</small>
+          </div>
+        </div>
+        {allItems.length > 1 && (
+          <div className="qrt-entry-list">
+            {allItems.map((ev, i) => (
+              <div key={i} className={`qrt-entry-chip${i === active ? ' active' : ''}`} onClick={() => i !== active && switchTo(i)}>
+                <span className="qrt-ec-glyph">📅</span>
+                <span className="qrt-ec-label">{eventLabel(ev)}</span>
+                {ev.date && <span className="qrt-ec-sub">{eventSub(ev)}</span>}
+                <button className="qrt-ec-del" aria-label={`Remove event ${i + 1}`} onClick={e => removeItem(i, e)}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="qrt-event-form">
-          <div className="qrt-form-field"><label>Event title <span className="qrt-required">*</span></label><input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Team meeting, Birthday party…"/></div>
+          <div className="qrt-form-field"><label>Event title <span className="qrt-required">*</span></label><input value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Team meeting, Birthday party…"/></div>
           <div className="qrt-form-row qrt-form-row-date">
-            <div className="qrt-form-field"><label>Date</label><input type="date" value={form.date} onChange={e => set('date', e.target.value)}/></div>
-            <div className="qrt-form-field qrt-field-allday"><label>&nbsp;</label><label className="qrt-allday-label"><input type="checkbox" checked={form.allDay} onChange={e => set('allDay', e.target.checked)}/> All day</label></div>
+            <div className="qrt-form-field"><label>Date</label><input type="date" value={form.date} onChange={e => setF('date', e.target.value)}/></div>
+            <div className="qrt-form-field qrt-field-allday"><label>&nbsp;</label><label className="qrt-allday-label"><input type="checkbox" checked={form.allDay} onChange={e => setF('allDay', e.target.checked)}/> All day</label></div>
           </div>
           {!form.allDay && (
             <div className="qrt-form-row">
-              <div className="qrt-form-field"><label>Start time</label><input type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)}/></div>
-              <div className="qrt-form-field"><label>End time</label><input type="time" value={form.endTime} onChange={e => set('endTime', e.target.value)}/></div>
+              <div className="qrt-form-field"><label>Start time</label><input type="time" value={form.startTime} onChange={e => setF('startTime', e.target.value)}/></div>
+              <div className="qrt-form-field"><label>End time</label><input type="time" value={form.endTime} onChange={e => setF('endTime', e.target.value)}/></div>
             </div>
           )}
-          <div className="qrt-form-field"><label>Location</label><input value={form.location} onChange={e => set('location', e.target.value)} placeholder="123 Main St, London or Zoom link…"/></div>
-          <div className="qrt-form-field"><label>Description</label><textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="Optional notes…"/></div>
+          <div className="qrt-form-field"><label>Location</label><input value={form.location} onChange={e => setF('location', e.target.value)} placeholder="123 Main St or Zoom link…"/></div>
+          <div className="qrt-form-field"><label>Description</label><textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={3} placeholder="Optional notes…"/></div>
         </div>
+        {items.length < MAX_EVENTS && (
+          <button className="qrt-add-entry-btn" type="button" onClick={addAnother}>
+            <ToolGlyph name="calendarPlus" size={14}/> Add another event
+          </button>
+        )}
         <div className="qrt-upload-or"><span>or</span></div>
         <label className="qrt-file-upload-alt">
           <input type="file" accept=".ics,.ical" onChange={handleUpload}/>
           {uploadedIcs ? <><span>📅</span><strong>{uploadedIcs}</strong></> : <><span>📎</span><div><strong>Upload a .ics file</strong><small>Existing calendar event</small></div></>}
         </label>
         {error && <p className="qrt-error">{error}</p>}
-        <button className="button primary qrt-generate" onClick={generate} disabled={!form.title.trim() && !uploadedIcs}><ToolGlyph name="qr" size={18}/> Generate event QR</button>
+        <button className="button primary qrt-generate" onClick={generate} disabled={!canGenerate}>
+          <ToolGlyph name="qr" size={18}/> Generate event QR
+        </button>
       </section>
       {result && (
         <section className="qrt-result" aria-label="Generated event QR">
-          <div className="qrt-section-label"><span>2</span><div><strong>Scan to add to calendar</strong><small>Opens a download page — one tap adds the event to any calendar app.</small></div></div>
+          <div className="qrt-section-label">
+            <span>2</span>
+            <div>
+              <strong>Scan to add {validCount > 1 ? `${validCount} events` : 'to calendar'}</strong>
+              <small>Opens a page — one tap adds {validCount > 1 ? 'all events' : 'the event'} to any calendar app.</small>
+            </div>
+          </div>
           <div className="qrt-code"><canvas ref={canvasRef}/></div>
-          <p className="qrt-contains">QR links to this app. Scanning shows a formatted event card and a .ics download.</p>
+          <p className="qrt-contains">QR links to this app. Scanning shows formatted event cards and a .ics download.</p>
           <div className="qrt-actions">
             <button className="button primary" onClick={downloadIcs}><Icon name="copy" size={17}/> Download .ics</button>
             <button className="button secondary" onClick={copyLink}><Icon name={copied ? 'check' : 'copy'} size={17}/>{copied ? 'Copied' : 'Copy link'}</button>

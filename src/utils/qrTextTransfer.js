@@ -172,3 +172,70 @@ export const isFileTransferRoute = value => {
 };
 
 export const isTextLikeFile = file => file.mimeType.startsWith('text/') || /\.(txt|md|json|csv|xml|yaml|yml|css|js|ts|html)$/i.test(file.name);
+
+// ── vCard helpers ──────────────────────────────────────────────────────────
+
+const escapeVCard = v => String(v || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+
+export function buildVCard({ firstName = '', lastName = '', phone = '', phoneType = 'CELL', email = '', company = '', website = '', note = '' } = {}) {
+  const fn = [firstName, lastName].filter(Boolean).join(' ') || phone || email || 'Contact';
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${escapeVCard(fn)}`,
+    `N:${escapeVCard(lastName)};${escapeVCard(firstName)};;;`,
+    phone && `TEL;TYPE=${phoneType || 'CELL'}:${phone}`,
+    email && `EMAIL:${email.toLowerCase()}`,
+    company && `ORG:${escapeVCard(company)}`,
+    website && `URL:${website}`,
+    note && `NOTE:${escapeVCard(note)}`,
+    'END:VCARD',
+  ];
+  return lines.filter(Boolean).join('\r\n');
+}
+
+export function parseVCard(text) {
+  const get = key => {
+    const m = text.match(new RegExp(`^${key}(?:;[^:]*)?:(.*)$`, 'm'));
+    return (m?.[1] ?? '').trim().replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+  };
+  const fn = get('FN');
+  const n = get('N').split(';');
+  const lastName  = n[0] || '';
+  const firstName = n[1] || '';
+  const phone = (() => { const m = text.match(/^TEL(?:;[^:]*)?:(.*)$/m); return (m?.[1] ?? '').trim(); })();
+  const phoneType = (() => { const m = text.match(/^TEL;TYPE=([^:;]+)/m); return (m?.[1] ?? 'CELL').trim(); })();
+  return {
+    fullName: fn || [firstName, lastName].filter(Boolean).join(' '),
+    firstName, lastName, phone, phoneType,
+    email:   get('EMAIL').toLowerCase() || '',
+    company: get('ORG'),
+    website: get('URL'),
+    note:    get('NOTE'),
+  };
+}
+
+export function parseAllVCards(text) {
+  const blocks = [...text.matchAll(/BEGIN:VCARD[\s\S]*?END:VCARD/gi)];
+  return blocks.length > 0 ? blocks.map(m => parseVCard(m[0])) : [parseVCard(text)];
+}
+
+// ── Event transfer URL helpers ─────────────────────────────────────────────
+
+export function buildEventTransferUrl(icsText, locationLike = window.location) {
+  const base = `${locationLike.origin}${locationLike.pathname}`;
+  return `${base}#textqr/event/${encodeTransferText(icsText)}`;
+}
+
+export function isEventTransferRoute(value) {
+  const hash = value.startsWith('#') ? value : (() => { try { return new URL(value, window.location.href).hash; } catch { return ''; } })();
+  return hash.startsWith('#textqr/event/');
+}
+
+export function readEventPayload(value) {
+  try {
+    const hash = value.startsWith('#') ? value : new URL(value, window.location.href).hash;
+    const match = hash.match(/^#textqr\/event\/([A-Za-z0-9_-]+)$/);
+    return match ? decodeTransferText(match[1]) : null;
+  } catch { return null; }
+}
