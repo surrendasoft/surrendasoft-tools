@@ -8,18 +8,22 @@ export default function CameraTool() {
   const videoRef = useRef(null), streamRef = useRef(null);
   const stopStream = () => { streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null; };
   useEffect(() => () => { stopStream(); photos.forEach(p => URL.revokeObjectURL(p.url)); }, []);
+  // The <video> element only mounts once `active` is true, so the stream must be
+  // attached here (after the ref exists) rather than immediately after getUserMedia.
+  useEffect(() => {
+    if (active && videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current;
+  }, [active]);
   const start = async () => {
     setError('');
     try {
       stopStream();
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
       streamRef.current = stream;
-      if (videoRef.current) { videoRef.current.srcObject = stream; }
       setActive(true);
     } catch (err) { setError(err.name === 'NotAllowedError' ? 'Camera permission was denied.' : 'Could not access the camera.'); }
   };
   const stop = () => { stopStream(); setActive(false); };
-  const switchCamera = async () => { const next = facingMode === 'user' ? 'environment' : 'user'; setFacingMode(next); if (active) { stopStream(); setActive(false); setTimeout(async () => { try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); streamRef.current = stream; if (videoRef.current) videoRef.current.srcObject = stream; setActive(true); } catch (err) { setError('Could not switch camera.'); } }, 100); } };
+  const switchCamera = async () => { const next = facingMode === 'user' ? 'environment' : 'user'; setFacingMode(next); if (active) { stopStream(); try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); streamRef.current = stream; if (videoRef.current) videoRef.current.srcObject = stream; } catch (err) { setActive(false); setError('Could not switch camera.'); } } };
   const snap = () => {
     const video = videoRef.current; if (!video) return;
     const canvas = window.document.createElement('canvas');
