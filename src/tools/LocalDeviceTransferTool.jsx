@@ -297,7 +297,7 @@ function SignalQr({ value, fileName }) {
   return <div className="ldt-qr">{error ? <p className="ldt-error">{error}</p> : <canvas ref={canvasRef}/>}<button className="button secondary compact" onClick={download} disabled={Boolean(error)}><ToolGlyph name="download" size={16}/> Download QR</button></div>;
 }
 
-function SignalScanner({ onSignal }) {
+export function SignalScanner({ onSignal }) {
   const videoRef = useRef(null), canvasRef = useRef(null), streamRef = useRef(null), frameRef = useRef(null);
   const [active, setActive] = useState(false), [error, setError] = useState('');
   const stop = () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); streamRef.current?.getTracks().forEach(track => track.stop()); streamRef.current = null; setActive(false); };
@@ -312,13 +312,31 @@ function SignalScanner({ onSignal }) {
   };
   const start = async () => {
     if (!navigator.mediaDevices?.getUserMedia) { setError('Camera scanning requires HTTPS in most browsers. Upload a QR image or paste the return code instead.'); return; }
-    try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); streamRef.current = stream; setActive(true); if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); frameRef.current = requestAnimationFrame(scanFrame); } }
+    try {
+      setError('');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+      streamRef.current = stream;
+      setActive(true);
+    }
     catch { setError('Camera access was unavailable. Upload a QR image or paste the return code instead.'); stop(); }
   };
   const upload = event => {
     const file = event.target.files?.[0]; if (!file) return;
     const image = new Image(); image.onload = () => { const canvas = canvasRef.current; canvas.width = image.width; canvas.height = image.height; const context = canvas.getContext('2d', { willReadFrequently: true }); context.drawImage(image, 0, 0); const pixels = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(pixels.data, pixels.width, pixels.height); URL.revokeObjectURL(image.src); if (code?.data) accept(code.data); else setError('No readable return QR was found in that image.'); }; image.src = URL.createObjectURL(file);
   };
-  useEffect(() => stop, []);
-  return <div className="ldt-scanner"><div className={`ldt-viewfinder${active ? ' active' : ''}`}>{active ? <video ref={videoRef} muted playsInline aria-label="Return QR scanner camera"/> : <><ToolGlyph name="camera" size={40}/><span>Scan the return QR from this device</span></>}<canvas ref={canvasRef} hidden/></div><div className="ldt-scanner-actions">{active ? <button className="button secondary" onClick={stop}>Stop camera</button> : <button className="button primary" onClick={start}><ToolGlyph name="camera" size={17}/> Scan return QR</button>}<label className="button secondary"><ToolGlyph name="image" size={17}/> Upload QR image<input type="file" accept="image/*" onChange={upload}/></label></div>{error && <p className="ldt-error">{error}</p>}</div>;
+  // The video element is rendered only after `active` changes. Attach the stream
+  // after that render, matching the working Camera tool's lifecycle.
+  useEffect(() => {
+    if (!active || !videoRef.current || !streamRef.current) return undefined;
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    const beginScanning = async () => {
+      try { await video.play(); frameRef.current = requestAnimationFrame(scanFrame); }
+      catch { setError('The camera opened but its preview could not start. Try Stop camera, then scan again.'); }
+    };
+    beginScanning();
+    return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
+  }, [active]);
+  useEffect(() => () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); streamRef.current?.getTracks().forEach(track => track.stop()); }, []);
+  return <div className="ldt-scanner"><div className={`ldt-viewfinder${active ? ' active' : ''}`}>{active ? <video ref={videoRef} autoPlay muted playsInline aria-label="Return QR scanner camera"/> : <><ToolGlyph name="camera" size={40}/><span>Scan the return QR from this device</span></>}<canvas ref={canvasRef} hidden/></div><div className="ldt-scanner-actions">{active ? <button className="button secondary" onClick={stop}>Stop camera</button> : <button className="button primary" onClick={start}><ToolGlyph name="camera" size={17}/> Scan return QR</button>}<label className="button secondary"><ToolGlyph name="image" size={17}/> Upload QR image<input type="file" accept="image/*" onChange={upload}/></label></div>{error && <p className="ldt-error">{error}</p>}</div>;
 }
