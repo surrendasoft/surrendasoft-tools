@@ -40,6 +40,7 @@ const workspaceSelectors = {
   tz: '.tz-controls',
   qr: '.qr-layout',
   textqr: '.qrt-root',
+  localtransfer: '.ldt-root',
   bgremove: '.bgr-upload-zone',
   fileconv: '.bgr-upload-zone',
   fileview: '.bgr-upload-zone',
