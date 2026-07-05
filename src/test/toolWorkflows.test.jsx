@@ -16,6 +16,8 @@ import ProfitMarginTool from '../tools/ProfitMarginTool.jsx';
 import PercentageTool from '../tools/PercentageTool.jsx';
 import UnitConverterTool from '../tools/UnitConverterTool.jsx';
 import ScamCheckerTool from '../tools/ScamCheckerTool.jsx';
+import QrScamCheckerTool from '../tools/QrScamCheckerTool.jsx';
+import LinkScamCheckerTool from '../tools/LinkScamCheckerTool.jsx';
 import CalculatorTool from '../tools/CalculatorTool.jsx';
 import TextToSpeechTool from '../tools/TextToSpeechTool.jsx';
 import AudioRecorderTool from '../tools/AudioRecorderTool.jsx';
@@ -215,6 +217,22 @@ describe('deterministic tool workflows', () => {
     await user.type(body, 'URGENT! Verify your password and bank account now or legal action will follow. Pay with gift card.');
     await user.click(screen.getByRole('button', { name: 'Check for scam signals' }));
     expect(screen.getByText('Likely a scam')).toBeInTheDocument();
+  });
+
+  it('AC-LINKSCAM checks pasted suspicious URLs', async () => {
+    const user = userEvent.setup();
+    render(<LinkScamCheckerTool />);
+    const input = screen.getByLabelText('Suspicious URL');
+    await user.type(input, 'https://paypa1-secure-verify.xyz/login');
+    await user.click(screen.getByRole('button', { name: 'Check link' }));
+    expect(screen.getByText('Suspicious')).toBeInTheDocument();
+    expect(screen.getByText('https://paypa1-secure-verify.xyz/login')).toBeInTheDocument();
+  });
+
+  it('AC-QRSCAM offers link checking when a QR decodes to a URL', () => {
+    render(<QrScamCheckerTool />);
+    expect(screen.getByRole('button', { name: 'Start camera' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Link Scam Checker' })).toBeInTheDocument();
   });
 
   it('AC-CALC performs arithmetic and handles division by zero', async () => {

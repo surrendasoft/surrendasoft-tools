@@ -26,7 +26,9 @@ export const tools = [
   { id: 'camera', icon: 'camera', name: 'Camera', description: 'Take photos or record short video clips from your device camera. Download whatever you keep.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
   { id: 'percent', icon: 'percent', name: 'Percentage Calculator', description: 'Work out percentages, find what percent one number is of another, and calculate percentage change.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Calculators'] },
   { id: 'units', icon: 'swap', name: 'Unit Converter', description: 'Convert between metric and imperial units for length, weight, temperature, volume, speed, and area.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
-  { id: 'scam', icon: 'shieldAlert', name: 'Scam Email Checker', description: 'Paste a suspicious email to check for scam signals, phishing patterns, and dodgy links.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
+  { id: 'scam', icon: 'shieldAlert', name: 'Email Scam Checker', description: 'Paste a suspicious email to check for scam signals, phishing patterns, and dodgy links.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
+  { id: 'linkscam', icon: 'shieldAlert', name: 'Link Scam Checker', description: 'Paste a suspicious URL to check for phishing patterns, typosquatting, and dodgy domains before you tap it.', tint: 'yellow', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Utilities'], isNew: true },
+  { id: 'qrscam', icon: 'shieldAlert', name: 'QR Scam Checker', description: 'Scan or upload a QR code to decode it safely — check Wi-Fi, phone, and contact codes before you scan on your phone.', tint: 'yellow', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Utilities'], isNew: true },
   { id: 'seo', icon: 'search', name: 'SEO Checker', description: 'Enter a URL to get a quick SEO audit via Google PageSpeed — title, meta, speed, and Core Web Vitals.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Developer'] },
   { id: 'calc', icon: 'calculator', name: 'Calculator', description: 'A straightforward calculator for everyday arithmetic — add, subtract, multiply, divide.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
   { id: 'utc', icon: 'clock', name: 'UTC Converter', description: 'Convert between local time and UTC. Shows Unix timestamp and ISO 8601 format — handy for developers.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
@@ -49,6 +51,8 @@ export const tools = [
   { id: 'multipage', icon: 'layoutGrid', name: 'Multi Page Viewer', description: 'Open multiple websites in a grid. Great for monitoring, comparing pages, or watching dashboards side by side. Blocked sites get a direct link instead.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities', 'Developer'], isNew: true },
   { id: 'viewtest', icon: 'monitor', name: 'Website View Tester', description: 'Preview any website at mobile, tablet, laptop, and desktop viewport sizes. Instantly see how a site looks across device widths.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Business'], isNew: true },
   { id: 'urlparams', icon: 'link', name: 'URL Parameter Builder', description: 'Build, edit, and clean URL query parameters. Add UTM tracking, strip tracking params, and preview the before/after URL.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Business', 'Utilities'], isNew: true },
+  { id: 'workflow', icon: 'workflow', name: 'Workflow Diagram Maker', description: 'Map a process with boxes and arrows. Export as PNG or PDF. No login required.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true },
+  { id: 'quickform', icon: 'clipboardList', name: 'Quick Form Builder', description: 'Create a simple form and share it by link or QR code. Responses come back as a link, QR code, or downloadable file.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -81,6 +85,8 @@ export const TOOL_FLAGS = {
   percent:    true, // Percentage of, what % is X of Y, % change
   units:      true, // Length / weight / temp / volume / speed / area converter
   scam:       true, // Pattern-match email body for scam / phishing signals
+  linkscam:   true, // Paste a URL and flag phishing / typosquat patterns
+  qrscam:     true, // Decode QR codes locally; link checks handled separately
   seo:        true, // Google PageSpeed SEO audit for a URL
   calc:       true, // Basic arithmetic calculator
   utc:        true, // Local ↔ UTC converter + Unix timestamp + ISO 8601
@@ -103,6 +109,8 @@ export const TOOL_FLAGS = {
   multipage:  true, // Multi Page Viewer — URL grid with iframe fallback
   viewtest:   true, // Website View Tester — iframe preview at multiple viewport sizes
   urlparams:  true, // URL Parameter Builder — build/edit/clean query params + UTM quick fill
+  workflow:   true, // Workflow Diagram Maker — boxes, decisions, arrows, PNG/PDF/JSON export
+  quickform:  true, // Quick Form Builder — shareable forms, responses via link/QR
 };
 
 export const directoryFilters = ['All', 'New', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];

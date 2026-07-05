@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import ToolSharePanel, { ToolShareBanner } from '../components/ToolSharePanel.jsx';
+import { useToolShare } from '../hooks/useToolShare.js';
 
-// LCS-based line diff
 function diffLines(aText, bText) {
   const a = aText.split('\n');
   const b = bText.split('\n');
   const m = a.length, n = b.length;
 
-  // Build LCS table
   const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -14,7 +14,6 @@ function diffLines(aText, bText) {
     }
   }
 
-  // Backtrace
   const result = [];
   let i = m, j = n;
   while (i > 0 || j > 0) {
@@ -49,12 +48,28 @@ export default function DiffTool() {
   const [left, setLeft] = useState(SAMPLE_A);
   const [right, setRight] = useState(SAMPLE_B);
 
+  const loadShared = useCallback(data => {
+    if (typeof data?.left === 'string') setLeft(data.left);
+    if (typeof data?.right === 'string') setRight(data.right);
+  }, []);
+
+  const { loadedFromShare, dismissLoadedBanner, sharePanelProps } = useToolShare({
+    toolId: 'diff',
+    getPayload: () => ({ left, right }),
+    onLoad: loadShared,
+    canShare: Boolean(left.trim() || right.trim()),
+    confirmOnReplace: () => left !== SAMPLE_A || right !== SAMPLE_B,
+    invalidateDeps: [left, right],
+  });
+
   const diff = useMemo(() => diffLines(left, right), [left, right]);
   const adds = diff.filter(l => l.type === 'add').length;
   const dels = diff.filter(l => l.type === 'del').length;
 
   return (
     <div className="diff-root">
+      <ToolShareBanner show={loadedFromShare} onDismiss={dismissLoadedBanner}/>
+
       <div className="diff-editors">
         <label>
           <span>Original</span>
@@ -81,6 +96,8 @@ export default function DiffTool() {
           </div>
         ))}
       </div>
+
+      <ToolSharePanel {...sharePanelProps} qrHint="Scan to open this diff on another device"/>
     </div>
   );
 }

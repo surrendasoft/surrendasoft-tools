@@ -32,6 +32,8 @@ const workspaceSelectors = {
   percent: '.pct-tabs',
   units: '.unit-row',
   scam: '.scam-form',
+  linkscam: '.linkscam-root',
+  qrscam: '.qrscam-root',
   seo: '.status-input-row',
   calc: '.calc-wrap',
   utc: '.utc-grid',
@@ -54,6 +56,8 @@ const workspaceSelectors = {
   multipage: '.mpv-setup',
   viewtest: '.wvt-row',
   urlparams: '.upb-input-row',
+  workflow: '.wf-workspace',
+  quickform: '.qf-root',
 };
 
 afterEach(() => {

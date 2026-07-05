@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ToolSharePanel, { ToolShareBanner } from '../components/ToolSharePanel.jsx';
+import { useToolShare } from '../hooks/useToolShare.js';
 
 const MAX_PAGES = 12;
 const BLOCK_TIMEOUT_MS = 8000;
@@ -107,13 +109,34 @@ export default function MultiPageViewerTool() {
   const [cols, setCols] = useState(2);
   const [active, setActive] = useState(false);
 
+  const openGridFromUrls = useCallback(urls => {
+    if (!urls.length) return;
+    setPages(urls.slice(0, MAX_PAGES).map((url, i) => ({ url, id: `${url}-${Date.now()}-${i}` })));
+    setActive(true);
+  }, []);
+
+  const loadShared = useCallback(data => {
+    if (typeof data?.input === 'string') setInput(data.input);
+    if ([1, 2, 3, 4].includes(data?.cols)) setCols(data.cols);
+    const urls = (data?.input || '').split('\n').map(normalizeUrl).filter(Boolean);
+    if (data?.openGrid && urls.length) openGridFromUrls(urls);
+  }, [openGridFromUrls]);
+
   const parsedUrls = input.split('\n').map(normalizeUrl).filter(Boolean);
   const urlCount = Math.min(parsedUrls.length, MAX_PAGES);
 
+  const { loadedFromShare, dismissLoadedBanner, sharePanelProps } = useToolShare({
+    toolId: 'multipage',
+    getPayload: () => ({ input, cols, openGrid: active }),
+    onLoad: loadShared,
+    canShare: parsedUrls.length > 0,
+    confirmOnReplace: () => input !== SAMPLE || active,
+    invalidateDeps: [input, cols, active],
+  });
+
   const openGrid = () => {
     if (!parsedUrls.length) return;
-    setPages(parsedUrls.slice(0, MAX_PAGES).map((url, i) => ({ url, id: `${url}-${Date.now()}-${i}` })));
-    setActive(true);
+    openGridFromUrls(parsedUrls);
   };
 
   const openAllTabs = () => {
@@ -164,6 +187,8 @@ export default function MultiPageViewerTool() {
 
   return (
     <div className="mpv-setup">
+      <ToolShareBanner show={loadedFromShare} onDismiss={dismissLoadedBanner}/>
+
       <p className="mpv-intro">
         Paste URLs below — one per line — to open them side by side in a grid. Useful for monitoring
         websites, comparing pages, or keeping multiple dashboards open at once.
@@ -210,6 +235,8 @@ export default function MultiPageViewerTool() {
         Sites that generally <em>work</em>: Wikipedia, news sites, status pages, simple informational pages,
         some dashboards. Sites that <em>block</em>: Google, social media, email, banking, most SaaS apps.
       </div>
+
+      <ToolSharePanel {...sharePanelProps} qrHint="Scan to open this page grid on another device"/>
     </div>
   );
 }

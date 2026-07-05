@@ -1,30 +1,15 @@
+import { base64UrlToBytes, bytesToBase64Url, compressBytes as sharedCompressBytes, decompressBytes as sharedDecompressBytes, decodeTextBase64Url, encodeTextBase64Url, QR_URL_SAFE_LIMIT } from './binaryTransfer.js';
+
 export const QR_TEXT_SOFT_LIMIT = 1200;
 export const QR_TEXT_HARD_LIMIT = 1500;
 export const QR_FILE_SOURCE_LIMIT = 20 * 1024;
 export const QR_IMAGE_SOURCE_LIMIT = 15 * 1024 * 1024;
-export const QR_URL_HARD_LIMIT = 1900;
+export const QR_URL_HARD_LIMIT = QR_URL_SAFE_LIMIT;
 export const QR_IMAGE_TARGET_BYTES = 1100;
 export const BLOCKED_TINY_FILE_EXTENSIONS = ['exe', 'bat', 'cmd', 'sh', 'msi', 'scr', 'jar', 'app', 'dmg'];
 
-const bytesToBase64Url = bytes => {
-  let binary = '';
-  for (let index = 0; index < bytes.length; index += 1) binary += String.fromCharCode(bytes[index]);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-};
-
-const base64UrlToBytes = encoded => {
-  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(encoded.length / 4) * 4, '=');
-  const binary = atob(base64);
-  return Uint8Array.from(binary, character => character.charCodeAt(0));
-};
-
-export function encodeTransferText(text) {
-  return bytesToBase64Url(new TextEncoder().encode(text));
-}
-
-export function decodeTransferText(encoded) {
-  return new TextDecoder().decode(base64UrlToBytes(encoded));
-}
+export const encodeTransferText = encodeTextBase64Url;
+export const decodeTransferText = decodeTextBase64Url;
 
 export function validateTransferText(text) {
   if (!text.trim()) return { valid: false, error: 'Enter some text or a link to transfer.', warning: '' };
@@ -122,28 +107,13 @@ export async function condenseImageForQr(file) {
   return { file: output, width: best.width, height: best.height, quality: best.quality, originalSize: file.size, condensedSize: output.size };
 }
 
-const compressBytes = async bytes => {
-  if (typeof CompressionStream === 'undefined') return { bytes, compressed: false };
-  try {
-    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
-    const compressed = new Uint8Array(await new Response(stream).arrayBuffer());
-    return compressed.length < bytes.length ? { bytes: compressed, compressed: true } : { bytes, compressed: false };
-  } catch { return { bytes, compressed: false }; }
-};
-
-const decompressBytes = async bytes => {
-  if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot decompress the transferred file.');
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-};
-
 const cleanFileName = name => (name.split(/[\\/]/).pop() || 'transfer.bin').slice(0, 120);
 
 export async function buildFileTransfer(file, locationLike = window.location) {
   const validation = validateTinyFile(file);
   if (!validation.valid) throw new Error(validation.error);
   const originalBytes = new Uint8Array(await file.arrayBuffer());
-  const packed = await compressBytes(originalBytes);
+  const packed = await sharedCompressBytes(originalBytes);
   const name = encodeTransferText(cleanFileName(file.name));
   const mime = encodeTransferText(file.type || 'application/octet-stream');
   const data = bytesToBase64Url(packed.bytes);
@@ -159,7 +129,7 @@ export async function readFileTransfer(value) {
     const match = hash.match(/^#textqr\/file\/(z|r)\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)$/);
     if (!match) return null;
     const packed = base64UrlToBytes(match[4]);
-    const bytes = match[1] === 'z' ? await decompressBytes(packed) : packed;
+    const bytes = match[1] === 'z' ? await sharedDecompressBytes(packed) : packed;
     const name = cleanFileName(decodeTransferText(match[2]));
     const mimeType = decodeTransferText(match[3]);
     return { name, mimeType, bytes, originalSize: bytes.length, packedSize: packed.length, compressed: match[1] === 'z' };

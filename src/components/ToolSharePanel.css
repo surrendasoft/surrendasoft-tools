@@ -1,0 +1,17 @@
+.tool-share-banner{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#eaf9f4;border:1px solid #c6ebdf;border-radius:12px;color:#08785f;font:700 12px 'Manrope'}
+.tool-share-banner button{margin-left:auto;border:0;background:none;color:#08785f;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px}
+.tool-share{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:14px 16px;border:1.5px solid #e1e6ed;border-radius:14px;background:#fff;margin-top:16px}
+.tool-share-label{font:800 10px 'Manrope';letter-spacing:.08em;text-transform:uppercase;color:#788398}
+.tool-share-body{display:grid;gap:10px}
+.tool-share-result{display:grid;gap:10px}
+.tool-share-link-row{display:flex;gap:8px;align-items:center}
+.tool-share-link{flex:1;min-width:0;border:1.5px solid #dde3ee;border-radius:10px;padding:9px 12px;font:600 12px/1.4 'Manrope',monospace;color:#5a6a8a;background:#fbfcfe}
+.tool-share-link-row .button{padding:9px 13px;font-size:12px;white-space:nowrap}
+.tool-share-qr{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.tool-share-qr canvas{border:1.5px solid #e1e6ed;border-radius:10px;padding:8px;background:#fff}
+.tool-share-qr span{font:600 11px 'Manrope';color:#8a95b8}
+.tool-share-note{margin:0;font:600 11px/1.5 'Manrope';color:#8a95b8}
+@media(max-width:760px){
+  .tool-share{grid-template-columns:1fr;gap:8px}
+  .tool-share-link-row{flex-direction:column;align-items:stretch}
+}

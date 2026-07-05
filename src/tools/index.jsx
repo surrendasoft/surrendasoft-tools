@@ -28,6 +28,8 @@ const CameraTool = lazy(() => import('./CameraTool.jsx'));
 const PercentageTool = lazy(() => import('./PercentageTool.jsx'));
 const UnitConverterTool = lazy(() => import('./UnitConverterTool.jsx'));
 const ScamCheckerTool = lazy(() => import('./ScamCheckerTool.jsx'));
+const LinkScamCheckerTool = lazy(() => import('./LinkScamCheckerTool.jsx'));
+const QrScamCheckerTool = lazy(() => import('./QrScamCheckerTool.jsx'));
 const SeoCheckerTool = lazy(() => import('./SeoCheckerTool.jsx'));
 const CalculatorTool = lazy(() => import('./CalculatorTool.jsx'));
 const UtcConverterTool = lazy(() => import('./UtcConverterTool.jsx'));
@@ -50,6 +52,8 @@ const StopwatchTool = lazy(() => import('./StopwatchTool.jsx'));
 const MultiPageViewerTool = lazy(() => import('./MultiPageViewerTool.jsx'));
 const ViewTesterTool = lazy(() => import('./ViewTesterTool.jsx'));
 const UrlParamBuilderTool = lazy(() => import('./UrlParamBuilderTool.jsx'));
+const WorkflowDiagramTool = lazy(() => import('./WorkflowDiagramTool.jsx'));
+const QuickFormBuilderTool = lazy(() => import('./QuickFormBuilderTool.jsx'));
 
 export const toolComponents = {
   emoji: EmojiTool,
@@ -80,6 +84,8 @@ export const toolComponents = {
   percent: PercentageTool,
   units: UnitConverterTool,
   scam: ScamCheckerTool,
+  linkscam: LinkScamCheckerTool,
+  qrscam: QrScamCheckerTool,
   seo: SeoCheckerTool,
   calc: CalculatorTool,
   utc: UtcConverterTool,
@@ -102,4 +108,6 @@ export const toolComponents = {
   multipage: MultiPageViewerTool,
   viewtest: ViewTesterTool,
   urlparams: UrlParamBuilderTool,
+  workflow: WorkflowDiagramTool,
+  quickform: QuickFormBuilderTool,
 };

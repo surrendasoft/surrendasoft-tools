@@ -1,0 +1,45 @@
+.qrscam-root{display:grid;gap:18px}
+.qrscam-promise{display:flex;align-items:center;gap:12px;border:1px solid #f5d896;border-radius:14px;background:#fff8ec;color:#8a5b08;padding:14px 16px}
+.qrscam-promise>svg{flex-shrink:0}
+.qrscam-promise strong,.qrscam-promise span{display:block}
+.qrscam-promise strong{font:800 13px 'Manrope'}
+.qrscam-promise span{margin-top:2px;font-size:11px;line-height:1.45}
+.qrscam-scan,.qrscam-manual,.qrscam-result{border:1.5px solid #e1e6ed;border-radius:18px;background:#fff;padding:20px}
+.qrscam-section-label{display:flex;align-items:flex-start;gap:11px;margin-bottom:16px}
+.qrscam-section-label>span{display:grid;place-items:center;flex-shrink:0;width:27px;height:27px;border-radius:8px;background:#10183e;color:#fff;font:800 11px 'Manrope'}
+.qrscam-section-label strong,.qrscam-section-label small{display:block}
+.qrscam-section-label strong{color:#10183e;font:800 14px 'Manrope'}
+.qrscam-section-label small{color:#788398;font-size:11px;line-height:1.45;margin-top:3px}
+.qrscam-viewfinder{min-height:290px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;border:2px dashed #c7d2e2;border-radius:16px;background:#f7f9fc;color:#8290a7;overflow:hidden}
+.qrscam-viewfinder p{margin:0;font:700 12px 'Manrope'}
+.qrscam-viewfinder.active{border-style:solid;background:#10183e}
+.qrscam-viewfinder video{width:100%;height:340px;object-fit:cover;display:block}
+.qrscam-scan-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.qrscam-upload{cursor:pointer}
+.qrscam-upload input{display:none}
+.qrscam-error{border-radius:10px;padding:10px 12px;background:#fff0f0;color:#ad3838;font:600 11px/1.5 'Manrope';margin:10px 0 0}
+.qrscam-how{margin-top:16px;border-radius:12px;background:#eef4ff;padding:13px 15px}
+.qrscam-how strong{color:#244b88;font:800 12px 'Manrope'}
+.qrscam-how p{margin:3px 0 0;color:#617594;font-size:11px;line-height:1.5}
+.qrscam-textarea{display:block}
+.qrscam-textarea textarea{width:100%;box-sizing:border-box;resize:vertical;border:1.5px solid #d7dfeb;border-radius:12px;background:#fafbfd;color:#17203e;padding:14px;font:500 14px/1.6 'Manrope';outline:none}
+.qrscam-textarea textarea:focus{border-color:#7197d1;background:#fff;box-shadow:0 0 0 3px #2c5cc512}
+.qrscam-check-text{margin-top:10px}
+.qrscam-verdict{border:1.5px solid;border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.qrscam-verdict>span{display:flex;align-items:center;gap:8px;font:800 16px 'Manrope'}
+.qrscam-verdict p{margin:8px 0 0;color:#38445e;font-size:13px;line-height:1.55}
+.qrscam-decoded{border:1.5px solid #dce3ed;border-radius:14px;background:#fafbfd;overflow:hidden;margin-bottom:14px}
+.qrscam-decoded-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid #edf0f5}
+.qrscam-type-tag{font:700 10px 'Manrope';letter-spacing:.06em;text-transform:uppercase;color:#3852a0;background:#e8edfa;border-radius:6px;padding:4px 8px}
+.qrscam-copy-btn{display:inline-flex;align-items:center;gap:5px;border:1.5px solid #d0d8eb;border-radius:8px;background:#fff;color:#3852a0;padding:5px 10px;font:700 11px 'Manrope';cursor:pointer}
+.qrscam-copy-btn:hover{background:#eef1fb}
+.qrscam-payload{margin:0;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font:600 14px/1.6 'Manrope';color:#17203e;max-height:220px;overflow:auto}
+.qrscam-parsed{display:grid;gap:8px;margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#f4f7ff;border:1px solid #dce4f5}
+.qrscam-parsed>div{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start}
+.qrscam-parsed dt{margin:0;font:700 10px 'Manrope';letter-spacing:.04em;text-transform:uppercase;color:#788398}
+.qrscam-parsed dd{margin:0;font:600 13px 'Manrope';color:#17203e;overflow-wrap:anywhere}
+.qrscam-result-actions{display:flex;justify-content:center;margin-top:16px}
+.qrscam-link-cta{margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#eef4ff;border:1px solid #c6d0f0}
+.qrscam-link-cta p{margin:0 0 10px;color:#2a3460;font-size:12px;line-height:1.5}
+.qrscam-link-actions{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:760px){.qrscam-scan,.qrscam-manual,.qrscam-result{padding:16px}.qrscam-viewfinder{min-height:230px}.qrscam-viewfinder video{height:300px}.qrscam-scan-actions{display:grid;width:100%}.qrscam-scan-actions .button{width:100%;justify-content:center}}

@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import ToolSharePanel, { ToolShareBanner } from '../components/ToolSharePanel.jsx';
+import { useToolShare } from '../hooks/useToolShare.js';
 
 const FLAG_LIST = ['g', 'i', 'm', 's', 'u'];
 
@@ -11,6 +13,20 @@ export default function RegexTesterTool() {
   const [flags, setFlags] = useState('g');
   const [input, setInput] = useState('The quick brown fox jumps over the lazy dogs tonight');
 
+  const loadShared = useCallback(data => {
+    if (typeof data?.pattern === 'string') setPattern(data.pattern);
+    if (typeof data?.flags === 'string') setFlags(data.flags);
+    if (typeof data?.input === 'string') setInput(data.input);
+  }, []);
+
+  const { loadedFromShare, dismissLoadedBanner, sharePanelProps } = useToolShare({
+    toolId: 'regex',
+    getPayload: () => ({ pattern, flags, input }),
+    onLoad: loadShared,
+    canShare: Boolean(pattern || input.trim()),
+    invalidateDeps: [pattern, flags, input],
+  });
+
   const toggleFlag = f => setFlags(fl => fl.includes(f) ? fl.replace(f, '') : fl + f);
 
   const result = useMemo(() => {
@@ -20,10 +36,9 @@ export default function RegexTesterTool() {
       const re = new RegExp(pattern, effectiveFlags);
       const allMatches = [...input.matchAll(re)];
 
-      // Build highlighted HTML
       let html = '', last = 0;
       for (const m of allMatches) {
-        if (m.index < last) continue; // skip zero-width overlaps
+        if (m.index < last) continue;
         html += escapeHtml(input.slice(last, m.index));
         html += `<mark class="rx-match">${escapeHtml(m[0] || '\u200b')}</mark>`;
         last = m.index + (m[0].length || 1);
@@ -38,6 +53,8 @@ export default function RegexTesterTool() {
 
   return (
     <div className="rx-root">
+      <ToolShareBanner show={loadedFromShare} onDismiss={dismissLoadedBanner}/>
+
       <div className="rx-pattern-bar">
         <span className="rx-slash">/</span>
         <input
@@ -101,6 +118,8 @@ export default function RegexTesterTool() {
           </ol>
         )}
       </div>
+
+      <ToolSharePanel {...sharePanelProps} qrHint="Scan to open this regex test on another device"/>
     </div>
   );
 }

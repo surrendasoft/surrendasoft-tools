@@ -1,8 +1,49 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import ToolSharePanel, { ToolShareBanner } from '../components/ToolSharePanel.jsx';
+import { useToolShare } from '../hooks/useToolShare.js';
 
 export default function DateTool() {
-  const today = new Date().toISOString().slice(0,10); const later = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
-  const [start,setStart]=useState(today), [end,setEnd]=useState(later);
-  const result = useMemo(() => { const a=new Date(start+'T00:00:00'), b=new Date(end+'T00:00:00'); if (!start||!end||isNaN(a)||isNaN(b)) return null; const days=Math.round((b-a)/86400000); let business=0, d=new Date(a), dir=days>=0?1:-1; for(let i=0;i<Math.abs(days);i++){d.setDate(d.getDate()+dir); if(d.getDay()!==0&&d.getDay()!==6)business+=dir;} return {days,weeks:(days/7).toFixed(1),business}; },[start,end]);
-  return <><div className="field-row"><label>Start date<input type="date" value={start} onChange={e=>setStart(e.target.value)}/></label><label>End date<input type="date" value={end} onChange={e=>setEnd(e.target.value)}/></label></div>{result && <div className="result-grid"><div><strong>{Math.abs(result.days)}</strong><span>calendar days</span></div><div><strong>{Math.abs(result.business)}</strong><span>business days</span></div><div><strong>{Math.abs(result.weeks)}</strong><span>weeks</span></div></div>}<p className="result-caption">{result?.days === 0 ? 'These dates are the same day.' : `${Math.abs(result?.days || 0)} days ${result?.days < 0 ? 'before' : 'after'} the start date.`}</p></>;
+  const today = new Date().toISOString().slice(0, 10);
+  const later = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const [start, setStart] = useState(today);
+  const [end, setEnd] = useState(later);
+
+  const loadShared = useCallback(data => {
+    if (typeof data?.start === 'string') setStart(data.start);
+    if (typeof data?.end === 'string') setEnd(data.end);
+  }, []);
+
+  const { loadedFromShare, dismissLoadedBanner, sharePanelProps } = useToolShare({
+    toolId: 'dates',
+    getPayload: () => ({ start, end }),
+    onLoad: loadShared,
+    canShare: Boolean(start && end),
+    invalidateDeps: [start, end],
+  });
+
+  const result = useMemo(() => {
+    const a = new Date(`${start}T00:00:00`);
+    const b = new Date(`${end}T00:00:00`);
+    if (!start || !end || Number.isNaN(a) || Number.isNaN(b)) return null;
+    const days = Math.round((b - a) / 86400000);
+    let business = 0;
+    const d = new Date(a);
+    const dir = days >= 0 ? 1 : -1;
+    for (let i = 0; i < Math.abs(days); i++) {
+      d.setDate(d.getDate() + dir);
+      if (d.getDay() !== 0 && d.getDay() !== 6) business += dir;
+    }
+    return { days, weeks: (days / 7).toFixed(1), business };
+  }, [start, end]);
+
+  return <>
+    <ToolShareBanner show={loadedFromShare} onDismiss={dismissLoadedBanner}/>
+    <div className="field-row">
+      <label>Start date<input type="date" value={start} onChange={e => setStart(e.target.value)}/></label>
+      <label>End date<input type="date" value={end} onChange={e => setEnd(e.target.value)}/></label>
+    </div>
+    {result && <div className="result-grid"><div><strong>{Math.abs(result.days)}</strong><span>calendar days</span></div><div><strong>{Math.abs(result.business)}</strong><span>business days</span></div><div><strong>{Math.abs(result.weeks)}</strong><span>weeks</span></div></div>}
+    <p className="result-caption">{result?.days === 0 ? 'These dates are the same day.' : `${Math.abs(result?.days || 0)} days ${result?.days < 0 ? 'before' : 'after'} the start date.`}</p>
+    <ToolSharePanel {...sharePanelProps} qrHint="Scan to open this date range on another device"/>
+  </>;
 }

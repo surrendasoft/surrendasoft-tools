@@ -1,0 +1,17 @@
+.linkscam-root{display:grid;gap:18px}
+.linkscam-promise{display:flex;align-items:center;gap:12px;border:1px solid #f5d896;border-radius:14px;background:#fff8ec;color:#8a5b08;padding:14px 16px}
+.linkscam-promise>svg{flex-shrink:0}
+.linkscam-promise strong,.linkscam-promise span{display:block}
+.linkscam-promise strong{font:800 13px 'Manrope'}
+.linkscam-promise span{margin-top:2px;font-size:11px;line-height:1.45}
+.linkscam-form label input{width:100%;box-sizing:border-box}
+.linkscam-verdict{border:1.5px solid;border-radius:14px;padding:16px 18px}
+.linkscam-verdict>span{display:flex;align-items:center;gap:8px;font:800 16px 'Manrope'}
+.linkscam-verdict p{margin:8px 0 0;color:#38445e;font-size:13px;line-height:1.55}
+.linkscam-url-box{border:1.5px solid #dce3ed;border-radius:14px;background:#fafbfd;overflow:hidden}
+.linkscam-url-label{display:block;padding:10px 14px;border-bottom:1px solid #edf0f5;font:700 10px 'Manrope';letter-spacing:.06em;text-transform:uppercase;color:#3852a0;background:#f4f7ff}
+.linkscam-url{margin:0;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font:600 14px/1.6 'Manrope';color:#17203e}
+.linkscam-parsed{display:grid;gap:8px;margin:0;padding:14px 16px;border-radius:12px;background:#f4f7ff;border:1px solid #dce4f5}
+.linkscam-parsed>div{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start}
+.linkscam-parsed dt{margin:0;font:700 10px 'Manrope';letter-spacing:.04em;text-transform:uppercase;color:#788398}
+.linkscam-parsed dd{margin:0;font:600 13px 'Manrope';color:#17203e;overflow-wrap:anywhere}
