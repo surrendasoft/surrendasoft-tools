@@ -141,12 +141,43 @@ function CreateFileTransfer() {
 }
 
 function ReceivedText({ text, onClear }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => { await navigator.clipboard?.writeText(text); setCopied(true); window.setTimeout(() => setCopied(false), 1400); };
+  const [copied, setCopied] = useState('');
+  const copyKey = async (value, key) => { await navigator.clipboard?.writeText(value); setCopied(key); window.setTimeout(() => setCopied(''), 1400); };
+
+  const rawPhones = text.match(/\+?[\d][\d\s\-().]{6,20}[\d]/g) || [];
+  const phones = [...new Set(rawPhones.filter(p => (p.match(/\d/g) || []).length >= 7).map(p => p.trim()))];
+  const emails = [...new Set((text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || []).map(e => e.toLowerCase()))];
+
   return <div className="qrt-received">
-    <div className="qrt-success-icon"><Icon name="check" size={32}/></div><span className="qrt-kicker">QR TEXT RECEIVED</span><h2>Text transferred</h2><p>Copy it on this device. The text was decoded locally from the QR link.</p>
+    <div className="qrt-success-icon"><Icon name="check" size={32}/></div>
+    <span className="qrt-kicker">QR TEXT RECEIVED</span>
+    <h2>Text transferred</h2>
+    <p>Copy it on this device. The text was decoded locally from the QR link.</p>
     <div className="qrt-received-text">{text}</div>
-    <div className="qrt-received-actions"><button className="button primary" onClick={copy}><Icon name={copied ? 'check' : 'copy'} size={18}/>{copied ? 'Copied' : 'Copy text'}</button>{isSafeWebLink(text) && <a className="button secondary" href={text.trim()} target="_blank" rel="noreferrer noopener">Open link <Icon name="arrow" size={16}/></a>}<button className="button secondary" onClick={onClear}>Create another</button></div>
+    {(phones.length > 0 || emails.length > 0) && (
+      <div className="qrt-contacts">
+        <p className="qrt-contacts-label">Detected in this text</p>
+        {phones.map((phone, i) => (
+          <button key={'p'+i} className="qrt-contact-btn" onClick={() => copyKey(phone, 'p'+i)}>
+            <span className="qrt-contact-icon">📞</span>
+            <span className="qrt-contact-val">{phone}</span>
+            <span className="qrt-contact-copy">{copied === 'p'+i ? '✓ Copied' : 'Copy number'}</span>
+          </button>
+        ))}
+        {emails.map((email, i) => (
+          <button key={'e'+i} className="qrt-contact-btn" onClick={() => copyKey(email, 'e'+i)}>
+            <span className="qrt-contact-icon">✉️</span>
+            <span className="qrt-contact-val">{email}</span>
+            <span className="qrt-contact-copy">{copied === 'e'+i ? '✓ Copied' : 'Copy email'}</span>
+          </button>
+        ))}
+      </div>
+    )}
+    <div className="qrt-received-actions">
+      <button className="button primary" onClick={() => copyKey(text, 'all')}><Icon name={copied === 'all' ? 'check' : 'copy'} size={18}/>{copied === 'all' ? 'Copied' : 'Copy text'}</button>
+      {isSafeWebLink(text) && <a className="button secondary" href={text.trim()} target="_blank" rel="noreferrer noopener">Open link <Icon name="arrow" size={16}/></a>}
+      <button className="button secondary" onClick={onClear}>Create another</button>
+    </div>
     <p className="qrt-local-note"><Icon name="shield" size={17}/> Decoded in this browser. No server lookup was needed.</p>
   </div>;
 }
