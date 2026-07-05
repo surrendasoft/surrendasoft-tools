@@ -18,7 +18,7 @@ export const tools = [
   { id: 'speed', icon: 'gauge', name: 'Internet Speed Checker', description: 'Run a quick browser download test and estimate your current connection speed.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'hourly', icon: 'clock', name: 'Hourly Rate Calculator', description: 'Work out a sustainable hourly rate from income goals, billable hours, overheads, and profit.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'margin', icon: 'dollar', name: 'Profit Margin Calculator', description: 'Calculate selling price, profit, margin, and markup for products or services.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
-  { id: 'signpdf', icon: 'signature', name: 'Sign PDF', description: 'See your PDF, then drag a drawn or uploaded signature onto the page and download the signed file.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Business'] },
+  { id: 'signpdf', icon: 'signature', name: 'Sign PDF', description: 'See your PDF, then drag a drawn or uploaded signature onto the page and download the signed file.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Business'], featured: true },
   { id: 'tts', icon: 'volume', name: 'Text to Speech', description: 'Read any text aloud with your browser voice. Choose the voice, speed, and pitch.', tint: 'purple', status: 'Available', categories: ['Free', 'Media', 'Productivity'] },
   { id: 'recorder', icon: 'mic', name: 'Audio Recorder', description: 'Record from your microphone and download the audio. Nothing is uploaded.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
   { id: 'location', icon: 'mapPin', name: 'My Location', description: 'Show your GPS coordinates and accuracy with a map link. Asks permission first.', tint: 'blue', status: 'Available', categories: ['Free', 'Utilities'] },
@@ -34,7 +34,7 @@ export const tools = [
   { id: 'utc', icon: 'clock', name: 'UTC Converter', description: 'Convert between local time and UTC. Shows Unix timestamp and ISO 8601 format — handy for developers.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
   { id: 'tz', icon: 'earth', name: 'Time Zone Converter', description: 'Pick a time and source timezone to instantly see the equivalent across major world cities.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
   { id: 'qr', icon: 'qr', name: 'QR Code Generator', description: 'Turn any URL, text, or contact detail into a scannable QR code. Download as PNG instantly.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
-  { id: 'textqr', icon: 'qr', name: 'QR Share', description: 'Transfer text, links, or tiny files between devices using a QR code. No backend, account, or upload needed.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Productivity', 'Utilities'], isNew: true },
+  { id: 'textqr', icon: 'qr', name: 'QR Share', description: 'Transfer text, links, or tiny files between devices using a QR code. No backend, account, or upload needed.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Productivity', 'Utilities'], isNew: true, featured: true },
   { id: 'bgremove', icon: 'scissors', name: 'Background Remover', description: 'Remove the background from product photos and portraits with edge flood-fill. No AI, no upload, runs locally.', tint: 'purple', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileconv', icon: 'refresh', name: 'Image Converter', description: 'Convert images between JPG, PNG, and WebP. Adjust quality for JPEG and WebP. All conversion runs in your browser.', tint: 'blue', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileview', icon: 'fileSearch', name: 'File Viewer', description: 'Drop any file to view it: images, audio, video, PDF, text, code, JSON, CSV, HTML — or a hex dump for binary files. Edit text and download.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Developer', 'Utilities'] },
@@ -51,8 +51,8 @@ export const tools = [
   { id: 'multipage', icon: 'layoutGrid', name: 'Multi Page Viewer', description: 'Open multiple websites in a grid. Great for monitoring, comparing pages, or watching dashboards side by side. Blocked sites get a direct link instead.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities', 'Developer'], isNew: true },
   { id: 'viewtest', icon: 'monitor', name: 'Website View Tester', description: 'Preview any website at mobile, tablet, laptop, and desktop viewport sizes. Instantly see how a site looks across device widths.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Business'], isNew: true },
   { id: 'urlparams', icon: 'link', name: 'URL Parameter Builder', description: 'Build, edit, and clean URL query parameters. Add UTM tracking, strip tracking params, and preview the before/after URL.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Business', 'Utilities'], isNew: true },
-  { id: 'workflow', icon: 'workflow', name: 'Workflow Diagram Maker', description: 'Map a process with boxes and arrows. Export as PNG or PDF. No login required.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true },
-  { id: 'quickform', icon: 'clipboardList', name: 'Quick Form Builder', description: 'Create a simple form and share it by link or QR code. Responses come back as a link, QR code, or downloadable file.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true },
+  { id: 'workflow', icon: 'workflow', name: 'Workflow Diagram Maker', description: 'Map a process with boxes and arrows. Export as PNG or PDF. No login required.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true, featured: true },
+  { id: 'quickform', icon: 'clipboardList', name: 'Quick Form Builder', description: 'Create a simple form and share it by link or QR code. Responses come back as a link, QR code, or downloadable file.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true, featured: true },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -112,6 +112,9 @@ export const TOOL_FLAGS = {
   workflow:   true, // Workflow Diagram Maker — boxes, decisions, arrows, PNG/PDF/JSON export
   quickform:  true, // Quick Form Builder — shareable forms, responses via link/QR
 };
+
+// ─── Featured — hand-picked highlights shown at the top of the directory ────
+export const featuredToolIds = ['quickform', 'textqr', 'workflow', 'signpdf'];
 
 export const directoryFilters = ['All', 'New', 'Free', 'Business', 'Productivity', 'Education', 'Calculators', 'Media', 'Utilities', 'Files & PDF', 'Developer', 'Local AI', 'Uses Credits'];
 export const categoryIcons = { All:'sparkles', New:'refresh', Free:'check', Business:'business', Productivity:'zap', Education:'graduation', Calculators:'calculator', Media:'camera', Utilities:'wrench', 'Files & PDF':'fileText', Developer:'code', 'Local AI':'bot', 'Uses Credits':'star' };

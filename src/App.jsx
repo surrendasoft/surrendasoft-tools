@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Icon from './components/Icon.jsx';
 import ToolGlyph from './components/ToolGlyph.jsx';
-import { TOOL_FLAGS, categoryIcons, directoryFilters, tools } from './data/tools.js';
+import { TOOL_FLAGS, categoryIcons, directoryFilters, featuredToolIds, tools } from './data/tools.js';
 import { toolComponents } from './tools/index.jsx';
 
 const toolIdFromHash = () => {
@@ -67,6 +67,10 @@ export default function App() {
 function Home({ onOpen }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
+  const featuredTools = useMemo(() => featuredToolIds
+    .filter(id => TOOL_FLAGS[id])
+    .map(id => tools.find(tool => tool.id === id))
+    .filter(Boolean), []);
   const visibleTools = useMemo(() => {
     const search = query.trim().toLowerCase();
     return tools.filter(tool => {
@@ -87,6 +91,11 @@ function Home({ onOpen }) {
         <div className="trust-row"><span><i><ToolGlyph name="check" size={12}/></i> Free to use</span><span><i><ToolGlyph name="check" size={12}/></i> No login</span><span><i><ToolGlyph name="check" size={12}/></i> Runs in your browser</span></div>
       </div>
     </section>
+
+    {featuredTools.length > 0 && <section className="featured-section wrap">
+      <div className="section-heading"><div><span className="kicker">HAND-PICKED</span><h2>Featured tools</h2></div><p>Standouts worth a look — built to solve a whole job, not just half of one.</p></div>
+      <div className="featured-grid">{featuredTools.map(tool => <FeaturedCard key={tool.id} tool={tool} onOpen={onOpen}/>)}</div>
+    </section>}
 
     <section className="tools-section wrap" id="tools">
       <div className="directory-controls"><label className="directory-search"><Icon name="search"/><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tools, e.g. PDF, invoice, emoji, AI…" aria-label="Search tools"/>{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={16}/></button>}</label><div className="filter-chips" role="group" aria-label="Filter tools by category">{directoryFilters.map(item => <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}><span className="chip-ico"><ToolGlyph name={categoryIcons[item]} size={14}/></span>{item}</button>)}</div></div>
@@ -109,6 +118,19 @@ function Home({ onOpen }) {
 
     <section className="cta-section wrap"><div><span className="eyebrow dark">BUILT BY SURRENDASOFT</span><h2>Need a tool that fits<br/>your business?</h2><p>We build practical custom software for real workflows—not software for software’s sake.</p><a className="button light" href="mailto:hello@surrendasoft.com">Tell us what you need <Icon name="arrow"/></a></div><div className="cta-art"><span><ToolGlyph name="settings" size={54}/></span><i><ToolGlyph name="sparkles" size={20}/></i><b><ToolGlyph name="check" size={20}/></b></div></section>
   </>;
+}
+
+function FeaturedCard({ tool, onOpen }) {
+  return <article className="featured-card" onClick={() => onOpen(tool.id)}>
+    <div className="featured-card-head">
+      <div className={`tool-icon large ${tool.tint}`}><ToolGlyph name={tool.icon} size={26}/></div>
+      <span className="featured-badge"><ToolGlyph name="sparkles" size={11}/> Featured</span>
+    </div>
+    <h3>{tool.name}</h3>
+    <p>{tool.description}</p>
+    <div className="featured-tags">{(tool.tags || ['Free', 'Browser-based', 'No login']).map(tag => <span key={tag}>{tag}</span>)}</div>
+    <span className="featured-arrow">Try it <Icon name="arrow" size={15}/></span>
+  </article>;
 }
 
 function ToolCard({ tool, onOpen }) {
