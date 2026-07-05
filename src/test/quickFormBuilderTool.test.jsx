@@ -104,6 +104,28 @@ describe('AC-QUICKFORM builder workflow', () => {
     expect(await screen.findByRole('button', { name: 'Download fillable PDF' })).toBeInTheDocument();
   });
 
+  it('lets a recipient start their own form from the fill page, before and after submitting', async () => {
+    const user = userEvent.setup();
+    const form = clientIntakeTemplate();
+    const shareUrl = await buildToolShareUrl('quickform', form);
+
+    window.history.replaceState(null, '', new URL(shareUrl).hash);
+    render(<QuickFormBuilderTool />);
+    await screen.findByRole('heading', { name: 'Client intake' });
+    expect(screen.getByRole('button', { name: 'Create your own form' })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/Name/), 'Jane Doe');
+    await user.type(screen.getByLabelText(/Phone number/), '0400 000 000');
+    await user.click(screen.getByRole('button', { name: 'Share completed form' }));
+
+    expect(await screen.findByText('Form completed')).toBeInTheDocument();
+    const createOwnButtons = screen.getAllByRole('button', { name: 'Create your own form' });
+    expect(createOwnButtons.length).toBeGreaterThan(0);
+
+    await user.click(createOwnButtons[0]);
+    expect(await screen.findByRole('tab', { name: 'Build' })).toBeInTheDocument();
+  });
+
   it('returns a completed response link that opens in response view', async () => {
     const user = userEvent.setup();
     const form = clientIntakeTemplate();

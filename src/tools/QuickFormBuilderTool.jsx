@@ -462,7 +462,7 @@ function CreateMode({ form, setForm }) {
   );
 }
 
-function FillMode({ form }) {
+function FillMode({ form, onStartNewForm }) {
   const [answers, setAnswers] = useState(() => Object.fromEntries(form.fields.map(f => [f.id, defaultAnswerValue(f)])));
   const [errors, setErrors] = useState('');
   const [completed, setCompleted] = useState(null);
@@ -516,6 +516,9 @@ function FillMode({ form }) {
           footnote="This link contains your answers. Send it back to the form creator — nothing is stored on a server."
           qrHint="Scan to open this completed response"
         />
+        <div className="qf-mode-actions">
+          <button className="button secondary compact" onClick={onStartNewForm}><ToolGlyph name="clipboardList" size={14}/> Create your own form</button>
+        </div>
       </>
     );
   }
@@ -530,6 +533,9 @@ function FillMode({ form }) {
       <FormRenderer form={form} values={answers} onChange={onChange}/>
       {errors && <p className="pdf-error">{errors}</p>}
       <button className="button primary qf-submit" onClick={submit}><ToolGlyph name="link" size={15}/> Share completed form</button>
+      <div className="qf-mode-actions">
+        <button className="button secondary compact" onClick={onStartNewForm}><ToolGlyph name="clipboardList" size={14}/> Create your own form</button>
+      </div>
     </>
   );
 }
@@ -593,7 +599,7 @@ export default function QuickFormBuilderTool() {
         </>
       )}
 
-      {mode === 'fill' && <FillMode form={form}/>}
+      {mode === 'fill' && <FillMode form={form} onStartNewForm={startNewForm}/>}
 
       {mode === 'response' && response && (
         <>
