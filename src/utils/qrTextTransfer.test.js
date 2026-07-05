@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTransferUrl, decodeTransferText, encodeTransferText, isSafeWebLink, QR_TEXT_HARD_LIMIT, QR_TEXT_SOFT_LIMIT, readTransferPayload, validateTransferText } from './qrTextTransfer.js';
+import { buildFileTransfer, buildTransferUrl, decodeTransferText, encodeTransferText, isFileTransferRoute, isSafeWebLink, QR_FILE_SOURCE_LIMIT, QR_TEXT_HARD_LIMIT, QR_TEXT_SOFT_LIMIT, readFileTransfer, readTransferPayload, validateTinyFile, validateTransferText } from './qrTextTransfer.js';
 
 describe('QR Text Transfer encoding and limits', () => {
   it('round-trips Unicode, punctuation, and line breaks', () => {
@@ -24,5 +24,25 @@ describe('QR Text Transfer encoding and limits', () => {
     expect(isSafeWebLink('https://surrendasoft.com')).toBe(true);
     expect(isSafeWebLink('javascript:alert(1)')).toBe(false);
     expect(isSafeWebLink('Just a note')).toBe(false);
+  });
+});
+
+describe('QR tiny-file transfer', () => {
+  it('packs and reconstructs a tiny text file without a backend', async () => {
+    const original = new TextEncoder().encode('Session 1: Monday\nSession 2: Wednesday\n'.repeat(8));
+    const file = { name: 'schedule.txt', type: 'text/plain', size: original.length, arrayBuffer: async () => original.buffer };
+    const transfer = await buildFileTransfer(file, { origin: 'https://tools.example', pathname: '/app/' });
+    const received = await readFileTransfer(transfer.url);
+
+    expect(isFileTransferRoute(transfer.url)).toBe(true);
+    expect(transfer.url.length).toBeLessThanOrEqual(1900);
+    expect(received.name).toBe('schedule.txt');
+    expect(received.mimeType).toBe('text/plain');
+    expect(new TextDecoder().decode(received.bytes)).toBe(new TextDecoder().decode(original));
+  });
+
+  it('blocks unsafe executable extensions and oversized source files', () => {
+    expect(validateTinyFile({ name: 'installer.exe', size: 10 })).toMatchObject({ valid: false });
+    expect(validateTinyFile({ name: 'notes.txt', size: QR_FILE_SOURCE_LIMIT + 1 })).toMatchObject({ valid: false });
   });
 });
