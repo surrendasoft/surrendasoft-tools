@@ -322,10 +322,9 @@ describe('deterministic tool workflows', () => {
     expect(writeText).toHaveBeenCalledWith('-33.868800, 151.209300');
   });
 
-  it('AC-CAMERA opens the camera and captures a selected local photo', async () => {
+  it('AC-CAMERA auto-opens the camera and captures a selected local photo', async () => {
     const user = userEvent.setup();
     render(<CameraTool />);
-    await user.click(screen.getByRole('button', { name: 'Open camera' }));
     await user.click(await screen.findByRole('button', { name: /Take photo/ }));
     expect(await screen.findByAltText('Photo 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download 1 selected' })).toBeEnabled();
