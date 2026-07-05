@@ -3,7 +3,9 @@ import Icon from '../components/Icon.jsx';
 import ToolGlyph from '../components/ToolGlyph.jsx';
 import { formatBytes } from '../utils/format.js';
 
-const CLIP_LENGTHS = [{ value: 0.5, label: '30 seconds' }, { value: 1, label: '1 minute' }, { value: 2, label: '2 minutes' }, { value: 5, label: '5 minutes' }];
+// Kept short on purpose: at ~1080p a webcam recording runs roughly 2.5Mbps,
+// so even 2 minutes is already ~35–40MB held in memory as a single Blob.
+const CLIP_LENGTHS = [{ value: 15 / 60, label: '15 seconds' }, { value: 0.5, label: '30 seconds' }, { value: 1, label: '1 minute' }, { value: 2, label: '2 minutes' }];
 
 export default function CameraTool() {
   const supported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
@@ -105,5 +107,5 @@ export default function CameraTool() {
       <video controls src={v.url}/>
       <div className="camera-video-item-bar"><span>{formatBytes(v.size)}</span><a href={v.url} download={v.name} className="camera-dl">Download</a><button onClick={() => removeVideo(i)} className="camera-del">×</button></div>
     </div>)}</div>}
-    <p className="tool-footnote">{mode === 'video' ? 'Video is recorded entirely in your browser and never uploaded. Format is WebM.' : 'Photos are taken in your browser and never uploaded. Tap a photo to select or deselect it before downloading.'}</p></>;
+    <p className="tool-footnote">{mode === 'video' ? 'Video is recorded entirely in your browser and never uploaded. Format is WebM — best viewed or downloaded on desktop or Android; playback can be inconsistent on iOS Safari.' : 'Photos are taken in your browser and never uploaded. Tap a photo to select or deselect it before downloading.'}</p></>;
 }
