@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { buildFileTransfer, buildTransferUrl, decodeTransferText, encodeTransferText, isFileTransferRoute, isSafeWebLink, QR_FILE_SOURCE_LIMIT, QR_TEXT_HARD_LIMIT, QR_TEXT_SOFT_LIMIT, readFileTransfer, readTransferPayload, validateTinyFile, validateTransferText } from './qrTextTransfer.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { buildFileTransfer, buildTransferUrl, condenseImageForQr, decodeTransferText, encodeTransferText, isFileTransferRoute, isSafeWebLink, QR_FILE_SOURCE_LIMIT, QR_IMAGE_SOURCE_LIMIT, QR_TEXT_HARD_LIMIT, QR_TEXT_SOFT_LIMIT, readFileTransfer, readTransferPayload, validateTinyFile, validateTransferSource, validateTransferText } from './qrTextTransfer.js';
+
+afterEach(() => vi.restoreAllMocks());
 
 describe('QR Text Transfer encoding and limits', () => {
   it('round-trips Unicode, punctuation, and line breaks', () => {
@@ -44,5 +46,24 @@ describe('QR tiny-file transfer', () => {
   it('blocks unsafe executable extensions and oversized source files', () => {
     expect(validateTinyFile({ name: 'installer.exe', size: 10 })).toMatchObject({ valid: false });
     expect(validateTinyFile({ name: 'notes.txt', size: QR_FILE_SOURCE_LIMIT + 1 })).toMatchObject({ valid: false });
+  });
+
+  it('allows a large image source for local condensation but limits it to 15 MB', () => {
+    expect(validateTransferSource({ name: 'photo.jpg', type: 'image/jpeg', size: 3 * 1024 * 1024 })).toMatchObject({ valid: true });
+    expect(validateTransferSource({ name: 'photo.jpg', type: 'image/jpeg', size: QR_IMAGE_SOURCE_LIMIT + 1 })).toMatchObject({ valid: false });
+    expect(validateTransferSource({ name: 'drawing.svg', type: 'image/svg+xml', size: 2000 })).toMatchObject({ valid: false });
+  });
+
+  it('resizes and recompresses an image into a QR-sized browser file', async () => {
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 800, height: 400, close: vi.fn() }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ fillStyle: '', fillRect: vi.fn(), drawImage: vi.fn() });
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback, type) => callback(new Blob([new Uint8Array(900)], { type })));
+    const image = new File([new Uint8Array(5000)], 'holiday.jpg', { type: 'image/jpeg' });
+    const condensed = await condenseImageForQr(image);
+
+    expect(condensed.file.name).toBe('holiday-qr.webp');
+    expect(condensed.file.size).toBe(900);
+    expect(condensed.width).toBe(128);
+    expect(condensed.height).toBe(64);
   });
 });

@@ -57,6 +57,30 @@ describe('AC-TEXTQR browser-only transfer workflow', () => {
     expect(screen.getByText(/complete file and its metadata are inside/i)).toBeInTheDocument();
   });
 
+  it('auto-condenses an image and shows original versus QR previews', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 1200, height: 800, close: vi.fn() }));
+    const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback, type) => callback(new Blob([new Uint8Array(900)], { type })));
+    const arrayBufferDescriptor = Object.getOwnPropertyDescriptor(File.prototype, 'arrayBuffer');
+    Object.defineProperty(File.prototype, 'arrayBuffer', { configurable: true, value: async function arrayBuffer() { return new Uint8Array(this.size).buffer; } });
+    render(<QrTextTransferTool />);
+    await user.click(screen.getByRole('button', { name: 'Tiny file' }));
+    const image = new File([new Uint8Array(80 * 1024)], 'large-photo.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText('Choose a tiny file or image'), image);
+
+    expect(screen.getByAltText('Original selected preview')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Auto-condense & create QR' }));
+    expect(await screen.findByAltText('Condensed QR image preview')).toBeInTheDocument();
+    expect(screen.getAllByAltText('Original selected preview')).toHaveLength(1);
+    expect(screen.getByText('QR version being sent')).toBeInTheDocument();
+    expect(screen.getByText(/This QR version is what will be sent/i)).toBeInTheDocument();
+
+    toBlob.mockRestore();
+    vi.unstubAllGlobals();
+    if (arrayBufferDescriptor) Object.defineProperty(File.prototype, 'arrayBuffer', arrayBufferDescriptor);
+    else delete File.prototype.arrayBuffer;
+  });
+
   it('reconstructs a tiny file from its receive route', async () => {
     const contents = new TextEncoder().encode('Recovered entirely from the QR URL');
     const file = { name: 'recovered.txt', type: 'text/plain', size: contents.length, arrayBuffer: async () => contents.buffer };
@@ -71,5 +95,16 @@ describe('AC-TEXTQR browser-only transfer workflow', () => {
     expect(screen.getByText('Recovered entirely from the QR URL')).toBeInTheDocument();
     createObjectURL.mockRestore();
     revokeObjectURL.mockRestore();
+  });
+
+  it('previews a reconstructed QR image in the receiving browser', async () => {
+    const bytes = new Uint8Array(320);
+    const file = { name: 'picture-qr.webp', type: 'image/webp', size: bytes.length, arrayBuffer: async () => bytes.buffer };
+    const transfer = await buildFileTransfer(file, window.location);
+    window.history.replaceState(null, '', new URL(transfer.url).hash);
+    render(<QrTextTransferTool />);
+
+    expect(await screen.findByAltText('picture-qr.webp')).toBeInTheDocument();
+    expect(screen.getByText('This is the condensed QR version.')).toBeInTheDocument();
   });
 });

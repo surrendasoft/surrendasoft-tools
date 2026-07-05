@@ -4,7 +4,7 @@ import jsQR from 'jsqr';
 import Icon from '../components/Icon.jsx';
 import ToolGlyph from '../components/ToolGlyph.jsx';
 import { formatBytes } from '../utils/format.js';
-import { buildFileTransfer, buildTransferUrl, isFileTransferRoute, isSafeWebLink, isTextLikeFile, QR_FILE_SOURCE_LIMIT, QR_TEXT_HARD_LIMIT, readFileTransfer, readTransferPayload, validateTinyFile, validateTransferText } from '../utils/qrTextTransfer.js';
+import { buildFileTransfer, buildTransferUrl, condenseImageForQr, isCondensableImage, isFileTransferRoute, isSafeWebLink, isTextLikeFile, QR_FILE_SOURCE_LIMIT, QR_IMAGE_SOURCE_LIMIT, QR_TEXT_HARD_LIMIT, readFileTransfer, readTransferPayload, validateTransferSource, validateTransferText } from '../utils/qrTextTransfer.js';
 import './QrTextTransferTool.css';
 import './QrTextTransferFile.css';
 
@@ -95,8 +95,17 @@ function CreateTextTransfer() {
 
 function CreateFileTransfer() {
   const [file, setFile] = useState(null), [result, setResult] = useState(null), [error, setError] = useState(''), [working, setWorking] = useState(false), [copied, setCopied] = useState(false);
+  const [sourcePreview, setSourcePreview] = useState('');
   const canvasRef = useRef(null);
-  const validation = validateTinyFile(file);
+  const validation = validateTransferSource(file);
+  const imageSource = isCondensableImage(file);
+  useEffect(() => {
+    if (!imageSource) { setSourcePreview(''); return undefined; }
+    const url = URL.createObjectURL(file);
+    setSourcePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, imageSource]);
+  useEffect(() => () => { if (result?.previewUrl) URL.revokeObjectURL(result.previewUrl); }, [result]);
   useEffect(() => {
     if (!result?.url || !canvasRef.current) return;
     QRCode.toCanvas(canvasRef.current, result.url, { width: 320, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#10183e', light: '#ffffff' } }, qrError => qrError && setError('The encoded file did not fit into a reliable QR code.'));
@@ -104,20 +113,26 @@ function CreateFileTransfer() {
   const create = async () => {
     if (!validation.valid) { setError(validation.error); return; }
     setWorking(true); setError(''); setResult(null);
-    try { setResult(await buildFileTransfer(file)); } catch (createError) { setError(createError.message); }
+    try {
+      const image = imageSource ? await condenseImageForQr(file) : null;
+      const transfer = await buildFileTransfer(image?.file || file);
+      setResult({ ...transfer, image, previewUrl: image ? URL.createObjectURL(image.file) : '' });
+    } catch (createError) { setError(createError.message); }
     setWorking(false);
   };
   const copyLink = async () => { await navigator.clipboard?.writeText(result.url); setCopied(true); window.setTimeout(() => setCopied(false), 1400); };
   const downloadQr = () => { const link = document.createElement('a'); link.download = `${result.name.replace(/\.[^.]+$/, '') || 'tiny-file'}-qr.png`; link.href = canvasRef.current.toDataURL('image/png'); link.click(); };
   return <div className={`qrt-create${result ? ' has-result' : ''}`}><section className="qrt-compose">
-    <div className="qrt-section-label"><span>1</span><div><strong>Choose a tiny file</strong><small>Best for TXT, JSON, CSV, Markdown, small configs, and tiny code snippets.</small></div></div>
-    <label className="qrt-file-drop"><input type="file" aria-label="Choose a tiny file" onChange={event => { setFile(event.target.files?.[0] || null); setResult(null); setError(''); }}/><ToolGlyph name="fileText" size={34}/><strong>{file ? file.name : 'Choose a file'}</strong><span>{file ? `${formatBytes(file.size)} · ${file.type || 'Unknown type'}` : `Maximum source size ${formatBytes(QR_FILE_SOURCE_LIMIT)}; final compressed QR must also fit.`}</span></label>
-    {file && validation.valid && <div className="qrt-file-ready"><Icon name="check" size={17}/><span>Ready to compress and test against QR capacity.</span></div>}
+    <div className="qrt-section-label"><span>1</span><div><strong>Choose a tiny file or image</strong><small>Text-like files remain intact. Images are resized into a tiny QR preview.</small></div></div>
+    <label className="qrt-file-drop"><input type="file" aria-label="Choose a tiny file or image" onChange={event => { setFile(event.target.files?.[0] || null); setResult(null); setError(''); }}/><ToolGlyph name={imageSource ? 'image' : 'fileText'} size={34}/><strong>{file ? file.name : 'Choose a file or image'}</strong><span>{file ? `${formatBytes(file.size)} · ${file.type || 'Unknown type'}` : `Files up to ${formatBytes(QR_FILE_SOURCE_LIMIT)}; source images up to ${formatBytes(QR_IMAGE_SOURCE_LIMIT)}.`}</span></label>
+    {sourcePreview && <div className="qrt-source-preview"><span>Original image</span><img src={sourcePreview} alt="Original selected preview"/><small>{formatBytes(file.size)} · Will be condensed locally</small></div>}
+    {file && validation.valid && <div className="qrt-file-ready"><Icon name="check" size={17}/><span>{imageSource ? 'Ready to auto-condense and test against QR capacity.' : 'Ready to compress and test against QR capacity.'}</span></div>}
     {error && <p className="qrt-error">{error}</p>}
-    <button className="button primary qrt-generate" onClick={create} disabled={!file || !validation.valid || working}><ToolGlyph name="qr" size={18}/>{working ? 'Compressing and checking…' : 'Create file QR'}</button>
-    <p className="qrt-tiny-explain">Normal photos, PDFs, Office files, and ZIPs are too large. This mode is intentionally for tiny files.</p>
+    <button className="button primary qrt-generate" onClick={create} disabled={!file || !validation.valid || working}><ToolGlyph name="qr" size={18}/>{working ? 'Condensing and checking…' : imageSource ? 'Auto-condense & create QR' : 'Create file QR'}</button>
+    <p className="qrt-tiny-explain">For images, the condensed preview—not the original—is transferred. PDFs, Office files, and ZIPs remain too large.</p>
   </section>{result && <section className="qrt-result" aria-label="Generated file transfer QR">
-    <div className="qrt-section-label"><span>2</span><div><strong>Scan to reconstruct the file</strong><small>The receiving browser rebuilds the original download.</small></div></div>
+    <div className="qrt-section-label"><span>2</span><div><strong>Scan to reconstruct the file</strong><small>The receiving browser rebuilds the transferred file.</small></div></div>
+    {result.image && <><div className="qrt-image-compare qrt-image-compare-single"><figure><span>QR version being sent</span><img src={result.previewUrl} alt="Condensed QR image preview"/><figcaption>{result.image.width} × {result.image.height} · {formatBytes(result.image.condensedSize)}</figcaption></figure></div><p className="qrt-condensed-notice"><Icon name="check" size={16}/> Auto-condensed locally from {formatBytes(result.image.originalSize)} to {formatBytes(result.image.condensedSize)}. This QR version is what will be sent.</p></>}
     <div className="qrt-code"><canvas ref={canvasRef}/></div>
     <div className="qrt-file-stats"><div><span>Original</span><strong>{formatBytes(result.originalSize)}</strong></div><div><span>QR payload</span><strong>{formatBytes(result.packedSize)}</strong></div><div><span>Encoding</span><strong>{result.compressed ? 'Gzip' : 'Raw'}</strong></div></div>
     <p className="qrt-contains">The complete file and its metadata are inside this QR URL. Nothing is uploaded.</p>
@@ -139,6 +154,7 @@ function ReceivedText({ text, onClear }) {
 function ReceivedFile({ file, onClear }) {
   const [downloadUrl, setDownloadUrl] = useState('');
   const [preview] = useState(() => isTextLikeFile(file) ? new TextDecoder().decode(file.bytes) : '');
+  const imageFile = file.mimeType.startsWith('image/');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -157,6 +173,7 @@ function ReceivedFile({ file, onClear }) {
   return <div className="qrt-received qrt-received-file">
     <div className="qrt-success-icon"><Icon name="check" size={32}/></div><span className="qrt-kicker">TINY FILE RECEIVED</span><h2>File reconstructed</h2><p>The original file was rebuilt locally from the QR link.</p>
     <div className="qrt-file-summary"><ToolGlyph name="fileText" size={30}/><div><strong>{file.name}</strong><span>{formatBytes(file.originalSize)} · {file.mimeType} · {file.compressed ? 'Gzip transfer' : 'Raw transfer'}</span></div></div>
+    {imageFile && downloadUrl && <div className="qrt-received-image"><span>Image received from QR</span><img src={downloadUrl} alt={file.name}/><small>This is the condensed QR version.</small></div>}
     {preview && <pre className="qrt-file-preview">{preview}</pre>}
     <div className="qrt-received-actions">{preview && <button className="button secondary" onClick={copyText}><Icon name={copied ? 'check' : 'copy'} size={18}/>{copied ? 'Copied' : 'Copy file text'}</button>}<a className="button primary" href={downloadUrl} download={file.name}>Download file</a><button className="button secondary" onClick={onClear}>Create another</button></div>
     <p className="qrt-local-note"><Icon name="shield" size={17}/> Only download files from people you trust. Nothing was fetched from a server.</p>
