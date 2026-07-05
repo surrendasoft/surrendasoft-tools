@@ -58,6 +58,11 @@ const workspaceSelectors = {
   urlparams: '.upb-input-row',
   workflow: '.wf-workspace',
   quickform: '.qf-root',
+  wordpdf: '.wpc-root',
+  maproute: '.msm-root',
+  payrequest: '.prg-root',
+  invoicepdf: '.sip-root',
+  checklist: '.qcs-root',
 };
 
 afterEach(() => {

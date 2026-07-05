@@ -1,0 +1,70 @@
+.prg-methods {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.prg-grid label > b {
+  margin-left: 4px;
+  color: #b34444;
+  font: 700 8px 'DM Sans';
+}
+
+.prg-bpoint {
+  margin-top: 14px;
+  border: 1px solid #d7e4f3;
+  border-radius: 13px;
+  background: #f4f9ff;
+  padding: 14px;
+}
+
+.prg-bpoint-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 13px;
+  color: #265f9f;
+}
+
+.prg-bpoint-head strong,
+.prg-bpoint-head span {
+  display: block;
+}
+
+.prg-bpoint-head strong {
+  color: #173f72;
+  font: 800 12px 'Manrope';
+}
+
+.prg-bpoint-head span {
+  margin-top: 2px;
+  color: #6b7e97;
+  font-size: 9px;
+}
+
+.prg-bpoint-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 12px 0 0;
+  border-radius: 9px;
+  background: #fff4d9;
+  color: #86590b;
+  padding: 9px 10px;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.prg-bpoint-warning svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .prg-methods {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .prg-methods {
+    grid-template-columns: 1fr;
+  }
+}

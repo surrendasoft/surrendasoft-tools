@@ -1,12 +1,12 @@
 import {
   AlarmClock, AlignLeft, ArrowLeftRight, ArrowRight, Bot, Braces, BriefcaseBusiness,
-  Calculator, CalendarPlus, CalendarRange, Camera, Check, CheckSquare, ChevronDown, ChevronUp,
+  Bike, Calculator, CalendarPlus, CalendarRange, Camera, Car, Check, CheckSquare, ChevronDown, ChevronUp,
   ClipboardList, Clock3, Code2,
   Crosshair, Diamond, DollarSign, Download, Earth, FileImage, FileSearch, FileText, Files,
   Fingerprint, FolderOpen, Gauge, GitCompare, Globe, GraduationCap, Hash,
   Image, ImageDown, Images, LayoutGrid, Lightbulb, Link2, ListChecks, Mail, MapPin, Mic, Monitor,
   Palette, PenLine, Percent, Phone, Plus, QrCode, Redo2, RefreshCw, Scissors, Search,
-  Settings, ShieldAlert, Siren, Smile, Sparkles, Square, Star, TestTube2,
+  Settings, ShieldAlert, Siren, Smile, Sparkles, Square, Star, TestTube2, Train,
   Text, Timer, Trash2, TriangleAlert, Type, Undo2, UserRound, Video, Volume2, Watch, Workflow, Wrench, X, Zap,
 } from 'lucide-react';
 
@@ -29,6 +29,7 @@ const glyphs = {
   testTube: TestTube2, link: Link2, fingerprint: Fingerprint,
   alarmClock: AlarmClock, watch: Watch,
   layoutGrid: LayoutGrid, userRound: UserRound, video: Video, workflow: Workflow,
+  car: Car, bike: Bike, train: Train,
   square: Square, diamond: Diamond, trash: Trash2, undo: Undo2, redo: Redo2,
   clipboardList: ClipboardList, mail: Mail, phone: Phone, hash: Hash,
   listChecks: ListChecks, checkSquare: CheckSquare, chevronUp: ChevronUp,

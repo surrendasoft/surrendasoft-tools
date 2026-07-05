@@ -35,6 +35,12 @@ export function useShareUrl({ getUrl, canShare = true, invalidateDeps = [] }) {
     window.setTimeout(() => setShareCopied(false), 1600);
   };
 
+  const clearShareLink = () => {
+    setShareUrl('');
+    setShareError('');
+    setShareCopied(false);
+  };
+
   const qrEligible = shareUrl.length > 0 && shareUrl.length <= QR_URL_SAFE_LIMIT;
 
   useEffect(() => {
@@ -55,5 +61,6 @@ export function useShareUrl({ getUrl, canShare = true, invalidateDeps = [] }) {
     qrEligible,
     createShareLink,
     copyShareLink,
+    clearShareLink,
   };
 }

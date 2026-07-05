@@ -53,6 +53,11 @@ export const tools = [
   { id: 'urlparams', icon: 'link', name: 'URL Parameter Builder', description: 'Build, edit, and clean URL query parameters. Add UTM tracking, strip tracking params, and preview the before/after URL.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Business', 'Utilities'], isNew: true },
   { id: 'workflow', icon: 'workflow', name: 'Workflow Diagram Maker', description: 'Map a process with boxes and arrows. Export as PNG or PDF. No login required.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true, featured: true },
   { id: 'quickform', icon: 'clipboardList', name: 'Quick Form Builder', description: 'Create a simple form and share it by link or QR code. Responses come back as a link, QR code, or downloadable file.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity'], isNew: true, featured: true },
+  { id: 'wordpdf', icon: 'refresh', name: 'Word ⇄ PDF Converter', description: 'Convert a Word document to PDF, or a PDF back to an editable Word file. Text, headings, bold/italic, and lists carry over.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Files & PDF'], isNew: true },
+  { id: 'maproute', icon: 'mapPin', name: 'Multi-Stop Map Link Generator', description: 'Build one Google Maps route link with an origin, destination, and up to eight stops. Copy, share, or turn it into a QR code.', tint: 'blue', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity', 'Utilities'], isNew: true },
+  { id: 'payrequest', icon: 'dollar', name: 'Payment Request Generator', description: 'Create clear SMS and email payment requests using a trusted payment link, bank details, or both. No payment processing.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No payments'], categories: ['Free', 'Business', 'Productivity'], isNew: true },
+  { id: 'invoicepdf', icon: 'fileText', name: 'Simple Invoice PDF Generator', description: 'Calculate line items and GST, preview a simple invoice, and create a polished PDF entirely in your browser.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'Downloads PDF'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
+  { id: 'checklist', icon: 'checkSquare', name: 'Quick Checklist Share', description: 'Create a checklist, tick items off, and share the latest snapshot by link or QR code. No login or live syncing.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity', 'Utilities'], isNew: true },
 ];
 
 // ─── Tool visibility flags — set false to hide a tool from the directory ────
@@ -111,6 +116,11 @@ export const TOOL_FLAGS = {
   urlparams:  true, // URL Parameter Builder — build/edit/clean query params + UTM quick fill
   workflow:   true, // Workflow Diagram Maker — boxes, decisions, arrows, PNG/PDF/JSON export
   quickform:  true, // Quick Form Builder — shareable forms, responses via link/QR
+  wordpdf:    true, // Word ⇄ PDF Converter — text-level docx↔pdf conversion
+  maproute:   true, // Multi-stop Google Maps route link + QR
+  payrequest: true, // Payment request message/link generator — no payment processing
+  invoicepdf: true, // Simple local invoice preview + PDF generator
+  checklist:  true, // Link-based checklist snapshots with QR sharing
 };
 
 // ─── Featured — hand-picked highlights shown at the top of the directory ────
