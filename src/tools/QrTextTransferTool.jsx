@@ -63,8 +63,8 @@ function CreateTransfer() {
     <div className="qrt-send-wrap">
       <div className="qrt-kind-tabs" role="group" aria-label="Transfer content type">
         <button className={kind === 'text' ? 'active' : ''} aria-pressed={kind === 'text'} onClick={() => setKind('text')}><ToolGlyph name="text" size={15}/> Text or link</button>
-        <button className={kind === 'contact' ? 'active' : ''} aria-pressed={kind === 'contact'} onClick={() => setKind('contact')}><ToolGlyph name="userRound" size={15}/> Contact</button>
-        <button className={kind === 'event' ? 'active' : ''} aria-pressed={kind === 'event'} onClick={() => setKind('event')}><ToolGlyph name="calendarPlus" size={15}/> Event</button>
+        <button className={kind === 'contact' ? 'active' : ''} aria-pressed={kind === 'contact'} onClick={() => setKind('contact')}><ToolGlyph name="userRound" size={15}/> Contacts</button>
+        <button className={kind === 'event' ? 'active' : ''} aria-pressed={kind === 'event'} onClick={() => setKind('event')}><ToolGlyph name="calendarPlus" size={15}/> Events</button>
         <button className={kind === 'file' ? 'active' : ''} aria-pressed={kind === 'file'} onClick={() => setKind('file')}><ToolGlyph name="fileText" size={15}/> Tiny file</button>
       </div>
       {kind === 'text' && <CreateTextTransfer/>}
