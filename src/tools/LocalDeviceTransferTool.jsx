@@ -5,9 +5,9 @@ import Icon from '../components/Icon.jsx';
 import ToolGlyph from '../components/ToolGlyph.jsx';
 import { formatBytes } from '../utils/format.js';
 import {
-  buildJoinUrl, connectionCode, createTransferId, decodeLocalSignal, encodeLocalSignal,
-  LOCAL_TRANSFER_CHUNK_SIZE, LOCAL_TRANSFER_FILE_LIMIT, LOCAL_TRANSFER_TEXT_LIMIT,
-  safeFileName, sha256Hex, waitForIceGathering,
+  assembleQrChunks, buildJoinUrl, connectionCode, createTransferId, decodeLocalSignal, decodeQrChunk,
+  encodeLocalSignal, LOCAL_TRANSFER_CHUNK_SIZE, LOCAL_TRANSFER_FILE_LIMIT, LOCAL_TRANSFER_TEXT_LIMIT,
+  safeFileName, sha256Hex, splitIntoQrChunks, waitForIceGathering,
 } from '../utils/localTransfer.js';
 import './LocalDeviceTransferTool.css';
 import './LocalDeviceTransferFallback.css';
@@ -263,8 +263,8 @@ export default function LocalDeviceTransferTool() {
     {(phase === 'joining' || phase === 'manual') && <section className="ldt-wait" role="status"><ToolGlyph name="refresh" size={28}/><strong>{phase === 'joining' ? 'Creating the private return handshake…' : 'The first connection code needs attention'}</strong><span>{phase === 'joining' ? 'Keep this page open while the browser gathers local connection details.' : 'Return to the start and paste a valid offer code.'}</span>{phase === 'manual' && <button className="button secondary" onClick={() => closeConnection()}>Start again</button>}</section>}
 
     {phase === 'return' && <section className="ldt-pairing">
-      <div className="ldt-step-head"><span>2</span><div><strong>Return this QR to the first device</strong><small>On the first device, choose “Scan return QR” and point its camera at this screen.</small></div></div>
-      <SignalQr value={answerCode} fileName="local-transfer-return-qr.png"/>
+      <div className="ldt-step-head"><span>2</span><div><strong>Return this QR to the first device</strong><small>On the first device, choose “Scan return QR” and point its camera at this screen. This QR cycles through a few small codes automatically — no need to time it.</small></div></div>
+      <AnimatedQrDisplay value={answerCode} peer={peerRef.current}/>
       <textarea className="ldt-signal-code" aria-label="Return connection code" readOnly value={answerCode}/>
       <div className="ldt-pair-actions"><button className="button secondary" onClick={() => copy(answerCode, 'answer')}><Icon name={copied === 'answer' ? 'check' : 'copy'} size={17}/>{copied === 'answer' ? 'Copied code' : 'Copy return code'}</button></div>
       <div className="ldt-one-qr success"><ToolGlyph name="shieldAlert" size={18}/><p><strong>The second QR contains connection data only.</strong>It does not contain your files or text. Once scanned, transfers use the encrypted WebRTC channel.</p></div>
@@ -297,23 +297,143 @@ function SignalQr({ value, fileName }) {
   return <div className="ldt-qr">{error ? <p className="ldt-error">{error}</p> : <canvas ref={canvasRef}/>}<button className="button secondary compact" onClick={download} disabled={Boolean(error)}><ToolGlyph name="download" size={16}/> Download QR</button></div>;
 }
 
+const ANIMATED_QR_INTERVAL_MS = 1500;
+
+// The "return answer" QR is the one a laptop's fixed-focus camera has to scan, so
+// instead of one dense code it cycles through several small ones (same idea as
+// hardware wallets use for air-gapped signing). Stops cycling on its own once this
+// device's own RTCPeerConnection reports 'connected' — no explicit "done" signal needed.
+function AnimatedQrDisplay({ value, peer }) {
+  const canvasRef = useRef(null);
+  const [chunks, setChunks] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [stopped, setStopped] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setIndex(0); setStopped(false);
+    if (!value) { setChunks([]); return; }
+    try { setChunks(splitIntoQrChunks(value)); }
+    catch { setChunks([]); setError('This connection QR could not be prepared.'); }
+  }, [value]);
+
+  useEffect(() => {
+    if (!peer) return undefined;
+    const checkConnected = () => { if (peer.connectionState === 'connected') setStopped(true); };
+    checkConnected();
+    peer.addEventListener?.('connectionstatechange', checkConnected);
+    return () => peer.removeEventListener?.('connectionstatechange', checkConnected);
+  }, [peer]);
+
+  useEffect(() => {
+    if (stopped || chunks.length <= 1) return undefined;
+    const timer = window.setInterval(() => setIndex(current => (current + 1) % chunks.length), ANIMATED_QR_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [chunks, stopped]);
+
+  const current = chunks[index] || '';
+  useEffect(() => {
+    if (!current || !canvasRef.current) return;
+    QRCode.toCanvas(canvasRef.current, current, { width: 340, margin: 2, errorCorrectionLevel: 'Q', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR could not be drawn.' : ''));
+  }, [current]);
+
+  return <div className="ldt-qr">
+    {error ? <p className="ldt-error">{error}</p> : <canvas ref={canvasRef}/>}
+    {!error && chunks.length > 1 && !stopped && <p className="ldt-qr-caption">Showing part {index + 1} of {chunks.length} · repeats automatically</p>}
+    {!error && stopped && <p className="ldt-qr-caption success"><ToolGlyph name="check" size={13}/> Connected — no need to keep scanning</p>}
+  </div>;
+}
+
+// Tuning for the live scan-quality overlay. jsQR only reports a location on frames it
+// fully decodes, so "orange" is an approximation based on recency/position of the last
+// successful decode rather than true continuous tracking — still gives the intended
+// "hold steady" coaching feel without over-promising a capability jsQR doesn't expose.
+const QR_QUALITY_RECENT_MS = 1500;
+const QR_QUALITY_STEADY_MS = 800;
+const QR_QUALITY_MOVE_RATIO = 0.12;
+const emptyChunkState = () => ({ sessionId: '', total: 0, compressed: '0', map: new Map() });
+
 export function SignalScanner({ onSignal }) {
-  const videoRef = useRef(null), canvasRef = useRef(null), streamRef = useRef(null), frameRef = useRef(null);
+  const videoRef = useRef(null), canvasRef = useRef(null), overlayRef = useRef(null);
+  const streamRef = useRef(null), frameRef = useRef(null);
   const [active, setActive] = useState(false), [error, setError] = useState('');
+  const [quality, setQuality] = useState('searching');
+  const [progress, setProgress] = useState(null);
+  const chunkStateRef = useRef(emptyChunkState());
+  const lastDetectionRef = useRef(null);
+  const lastGoodRef = useRef(null);
+  const qualityRef = useRef('searching');
+
+  const resetScan = () => { chunkStateRef.current = emptyChunkState(); setProgress(null); lastDetectionRef.current = null; lastGoodRef.current = null; qualityRef.current = 'searching'; setQuality('searching'); };
   const stop = () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); streamRef.current?.getTracks().forEach(track => track.stop()); streamRef.current = null; setActive(false); };
-  const accept = value => { stop(); setError(''); onSignal(value); };
+  const finish = value => { stop(); setError(''); resetScan(); onSignal(value); };
+
+  const ingestChunkText = text => {
+    let parsed;
+    try { parsed = decodeQrChunk(text); } catch { return false; }
+    const state = chunkStateRef.current;
+    if (state.sessionId && state.sessionId !== parsed.sessionId) state.map = new Map();
+    state.sessionId = parsed.sessionId; state.total = parsed.total; state.compressed = parsed.compressed;
+    state.map.set(parsed.index, parsed.data);
+    setProgress({ total: state.total, captured: new Set(state.map.keys()) });
+    if (state.map.size >= state.total) {
+      try { finish(assembleQrChunks(state.map, state.total, state.compressed)); }
+      catch { /* a duplicate/late frame raced the completion check — keep scanning */ }
+    }
+    return true;
+  };
+
+  const setQualityIfChanged = value => { if (qualityRef.current !== value) { qualityRef.current = value; setQuality(value); } };
+
+  const updateOverlay = (location, now) => {
+    const overlay = overlayRef.current, video = videoRef.current;
+    if (!overlay || !video || !video.videoWidth) return;
+    if (overlay.width !== video.clientWidth || overlay.height !== video.clientHeight) { overlay.width = video.clientWidth; overlay.height = video.clientHeight; }
+    const ctx = overlay.getContext?.('2d');
+    ctx?.clearRect(0, 0, overlay.width, overlay.height);
+    if (location) lastDetectionRef.current = { location, timestamp: now };
+    const detection = lastDetectionRef.current;
+    if (!detection || now - detection.timestamp > QR_QUALITY_RECENT_MS) { setQualityIfChanged('searching'); return; }
+
+    const scaleX = video.clientWidth / video.videoWidth, scaleY = video.clientHeight / video.videoHeight;
+    const { topLeftCorner: tl, topRightCorner: tr, bottomLeftCorner: bl, bottomRightCorner: br } = detection.location;
+    const xs = [tl.x, tr.x, bl.x, br.x].map(x => x * scaleX), ys = [tl.y, tr.y, bl.y, br.y].map(y => y * scaleY);
+    const left = Math.min(...xs), top = Math.min(...ys), width = Math.max(...xs) - left, height = Math.max(...ys) - top;
+
+    let nextQuality;
+    if (location) {
+      const center = { x: left + width / 2, y: top + height / 2 };
+      const previous = lastGoodRef.current;
+      const movedRatio = previous ? Math.hypot(center.x - previous.center.x, center.y - previous.center.y) / video.clientWidth : 0;
+      nextQuality = previous && now - previous.timestamp <= QR_QUALITY_STEADY_MS && movedRatio < QR_QUALITY_MOVE_RATIO ? 'green' : 'orange';
+      lastGoodRef.current = { center, timestamp: now };
+    } else {
+      nextQuality = 'orange';
+    }
+    setQualityIfChanged(nextQuality);
+    if (ctx) {
+      const color = nextQuality === 'green' ? '#0a8b6c' : '#c98a1f';
+      ctx.lineWidth = 4; ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 12;
+      ctx.strokeRect(left, top, width, height);
+    }
+  };
+
   const scanFrame = () => {
+    if (!streamRef.current) return;
     const video = videoRef.current, canvas = canvasRef.current;
     if (!video || !canvas || video.readyState < 2) { frameRef.current = requestAnimationFrame(scanFrame); return; }
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     const context = canvas.getContext('2d', { willReadFrequently: true }); context.drawImage(video, 0, 0);
     const image = context.getImageData(0, 0, canvas.width, canvas.height), code = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' });
-    if (code?.data) accept(code.data); else frameRef.current = requestAnimationFrame(scanFrame);
+    const now = Date.now();
+    updateOverlay(code?.location || null, now);
+    if (code?.data) ingestChunkText(code.data);
+    if (streamRef.current) frameRef.current = requestAnimationFrame(scanFrame);
   };
   const start = async () => {
     if (!navigator.mediaDevices?.getUserMedia) { setError('Camera scanning requires HTTPS in most browsers. Upload a QR image or paste the return code instead.'); return; }
     try {
-      setError('');
+      setError(''); resetScan();
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
       streamRef.current = stream;
       setActive(true);
@@ -322,7 +442,7 @@ export function SignalScanner({ onSignal }) {
   };
   const upload = event => {
     const file = event.target.files?.[0]; if (!file) return;
-    const image = new Image(); image.onload = () => { const canvas = canvasRef.current; canvas.width = image.width; canvas.height = image.height; const context = canvas.getContext('2d', { willReadFrequently: true }); context.drawImage(image, 0, 0); const pixels = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(pixels.data, pixels.width, pixels.height); URL.revokeObjectURL(image.src); if (code?.data) accept(code.data); else setError('No readable return QR was found in that image.'); }; image.src = URL.createObjectURL(file);
+    const image = new Image(); image.onload = () => { const canvas = canvasRef.current; canvas.width = image.width; canvas.height = image.height; const context = canvas.getContext('2d', { willReadFrequently: true }); context.drawImage(image, 0, 0); const pixels = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(pixels.data, pixels.width, pixels.height); URL.revokeObjectURL(image.src); if (code?.data && ingestChunkText(code.data)) setError(''); else setError('No readable connection QR part was found in that image.'); }; image.src = URL.createObjectURL(file);
   };
   // The video element is rendered only after `active` changes. Attach the stream
   // after that render, matching the working Camera tool's lifecycle.
@@ -338,5 +458,21 @@ export function SignalScanner({ onSignal }) {
     return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
   }, [active]);
   useEffect(() => () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); streamRef.current?.getTracks().forEach(track => track.stop()); }, []);
-  return <div className="ldt-scanner"><div className={`ldt-viewfinder${active ? ' active' : ''}`}>{active ? <video ref={videoRef} autoPlay muted playsInline aria-label="Return QR scanner camera"/> : <><ToolGlyph name="camera" size={40}/><span>Scan the return QR from this device</span></>}<canvas ref={canvasRef} hidden/></div><div className="ldt-scanner-actions">{active ? <button className="button secondary" onClick={stop}>Stop camera</button> : <button className="button primary" onClick={start}><ToolGlyph name="camera" size={17}/> Scan return QR</button>}<label className="button secondary"><ToolGlyph name="image" size={17}/> Upload QR image<input type="file" accept="image/*" onChange={upload}/></label></div>{error && <p className="ldt-error">{error}</p>}</div>;
+
+  const hint = quality === 'green' ? 'Reading…' : quality === 'orange' ? 'Hold steady…' : 'Looking for the QR code on the other screen…';
+  return <div className="ldt-scanner">
+    <div className={`ldt-viewfinder${active ? ' active' : ''}`}>
+      {active ? <>
+        <video ref={videoRef} autoPlay muted playsInline aria-label="Return QR scanner camera"/>
+        <canvas ref={overlayRef} className="ldt-viewfinder-overlay" aria-hidden="true"/>
+        <span className={`ldt-scan-hint quality-${quality}`}>{hint}</span>
+      </> : <><ToolGlyph name="camera" size={40}/><span>Scan the return QR from this device</span></>}
+      <canvas ref={canvasRef} hidden/>
+    </div>
+    {progress && progress.total > 1 && <div className="ldt-chunk-progress" role="status" aria-label={`Captured ${progress.captured.size} of ${progress.total} connection QR parts`}>
+      {Array.from({ length: progress.total }, (_, part) => <span key={part} className={progress.captured.has(part) ? 'done' : 'pending'}/>)}
+    </div>}
+    <div className="ldt-scanner-actions">{active ? <button className="button secondary" onClick={stop}>Stop camera</button> : <button className="button primary" onClick={start}><ToolGlyph name="camera" size={17}/> Scan return QR</button>}<label className="button secondary"><ToolGlyph name="image" size={17}/> Upload QR image<input type="file" accept="image/*" onChange={upload}/></label></div>
+    {error && <p className="ldt-error">{error}</p>}
+  </div>;
 }

@@ -1,9 +1,36 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import jsQR from 'jsqr';
 import LocalDeviceTransferTool, { SignalScanner } from '../tools/LocalDeviceTransferTool.jsx';
+import { splitIntoQrChunks } from '../utils/localTransfer.js';
+
+vi.mock('jsqr', () => ({ default: vi.fn() }));
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+// Drives the scanner's camera + jsQR pipeline through fully mocked requestAnimationFrame
+// and getUserMedia, feeding one jsQR result per animation frame — mirrors the real
+// rAF loop in SignalScanner without needing actual video pixels.
+async function startMockedScanner(onSignal) {
+  const rafQueue = [];
+  vi.stubGlobal('requestAnimationFrame', vi.fn(callback => { rafQueue.push(callback); return rafQueue.length; }));
+  vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  const stream = { getTracks: () => [{ stop: vi.fn() }] };
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: vi.fn().mockResolvedValue(stream) } });
+
+  const user = userEvent.setup();
+  render(<SignalScanner onSignal={onSignal}/>);
+  await user.click(screen.getByRole('button', { name: 'Scan return QR' }));
+  const video = await screen.findByLabelText('Return QR scanner camera');
+  Object.defineProperty(video, 'readyState', { configurable: true, value: 4 });
+  Object.defineProperty(video, 'videoWidth', { configurable: true, value: 640 });
+  Object.defineProperty(video, 'videoHeight', { configurable: true, value: 480 });
+  await waitFor(() => expect(rafQueue.length).toBeGreaterThan(0));
+
+  const flushFrame = () => { const callback = rafQueue.shift(); callback?.(); };
+  return { flushFrame, rafQueue };
+}
 
 describe('AC-LOCALTRANSFER local device transfer UI', () => {
   it('explains the private two-QR fallback and never asks for cloud storage', () => {
@@ -41,5 +68,52 @@ describe('AC-LOCALTRANSFER local device transfer UI', () => {
     expect(play).toHaveBeenCalled();
 
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: originalMediaDevices });
+  });
+
+  it('reassembles an animated QR sequence from multiple scanned frames and calls onSignal once complete', async () => {
+    const encoded = `sslt1.1.${'ABCDEFGHJKMNPQRSTVWXYZ0123456789'.repeat(6)}`;
+    const chunkTexts = splitIntoQrChunks(encoded, 25);
+    expect(chunkTexts.length).toBeGreaterThan(2);
+    const onSignal = vi.fn();
+    const { flushFrame } = await startMockedScanner(onSignal);
+
+    chunkTexts.forEach(text => {
+      jsQR.mockReturnValueOnce({ data: text, location: { topLeftCorner: { x: 0, y: 0 }, topRightCorner: { x: 10, y: 0 }, bottomLeftCorner: { x: 0, y: 10 }, bottomRightCorner: { x: 10, y: 10 } } });
+      flushFrame();
+    });
+
+    await waitFor(() => expect(onSignal).toHaveBeenCalledWith(encoded));
+  });
+
+  it('shows progress dots reflecting partial capture before the sequence completes', async () => {
+    const encoded = `sslt1.0.${'ABCDEFGHJKMNPQRSTVWXYZ0123456789'.repeat(6)}`;
+    const chunkTexts = splitIntoQrChunks(encoded, 25);
+    expect(chunkTexts.length).toBeGreaterThan(2);
+    const onSignal = vi.fn();
+    const { flushFrame } = await startMockedScanner(onSignal);
+
+    jsQR.mockReturnValueOnce({ data: chunkTexts[0], location: { topLeftCorner: { x: 0, y: 0 }, topRightCorner: { x: 10, y: 0 }, bottomLeftCorner: { x: 0, y: 10 }, bottomRightCorner: { x: 10, y: 10 } } });
+    flushFrame();
+
+    const progress = await screen.findByRole('status', { name: new RegExp(`Captured 1 of ${chunkTexts.length}`, 'i') });
+    expect(progress.querySelectorAll('span.done')).toHaveLength(1);
+    expect(progress.querySelectorAll('span.pending')).toHaveLength(chunkTexts.length - 1);
+    expect(onSignal).not.toHaveBeenCalled();
+  });
+
+  it('ignores QR frames that are not valid connection chunks and keeps scanning', async () => {
+    const encoded = `sslt1.0.${'ABCDEFGHJKMNPQRSTVWXYZ0123456789'.repeat(3)}`;
+    const chunkTexts = splitIntoQrChunks(encoded, 25);
+    const onSignal = vi.fn();
+    const { flushFrame } = await startMockedScanner(onSignal);
+
+    jsQR.mockReturnValueOnce({ data: 'not-a-valid-chunk', location: { topLeftCorner: { x: 0, y: 0 }, topRightCorner: { x: 10, y: 0 }, bottomLeftCorner: { x: 0, y: 10 }, bottomRightCorner: { x: 10, y: 10 } } });
+    flushFrame();
+    chunkTexts.forEach(text => {
+      jsQR.mockReturnValueOnce({ data: text, location: { topLeftCorner: { x: 0, y: 0 }, topRightCorner: { x: 10, y: 0 }, bottomLeftCorner: { x: 0, y: 10 }, bottomRightCorner: { x: 10, y: 10 } } });
+      flushFrame();
+    });
+
+    await waitFor(() => expect(onSignal).toHaveBeenCalledWith(encoded));
   });
 });

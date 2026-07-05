@@ -80,11 +80,11 @@ Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', {
 });
 
 const canvasContext = {
-  beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(),
+  beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(), strokeRect: vi.fn(),
   clearRect: vi.fn(), fillRect: vi.fn(), drawImage: vi.fn(),
   getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),
   putImageData: vi.fn(), createImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),
-  lineWidth: 1, lineCap: 'round', lineJoin: 'round', strokeStyle: '#000', fillStyle: '#fff',
+  lineWidth: 1, lineCap: 'round', lineJoin: 'round', strokeStyle: '#000', fillStyle: '#fff', shadowColor: '#000', shadowBlur: 0,
 };
 HTMLCanvasElement.prototype.getContext = vi.fn(() => canvasContext);
 HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,dGVzdA==');
