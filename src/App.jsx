@@ -4,6 +4,11 @@ import ToolGlyph from './components/ToolGlyph.jsx';
 import { TOOL_FLAGS, categoryIcons, directoryFilters, tools } from './data/tools.js';
 import { toolComponents } from './tools/index.jsx';
 
+const toolIdFromHash = () => {
+  const id = window.location.hash.replace('#', '').trim().split('/')[0];
+  return id && tools.some(tool => tool.id === id) ? id : null;
+};
+
 function Logo({ onClick }) {
   return <button className="logo" onClick={onClick} aria-label="SurrendaSoft Tools home">
     <span className="logo-mark">S</span><span>SurrendaSoft</span><span className="logo-tools">Tools</span>
@@ -12,16 +17,13 @@ function Logo({ onClick }) {
 
 export default function App() {
   const [activeTool, setActiveTool] = useState(() => {
-    const hash = window.location.hash.replace('#', '').trim();
-    return hash && tools.find(t => t.id === hash) ? hash : null;
+    return toolIdFromHash();
   });
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onHash = () => {
-      const hash = window.location.hash.replace('#', '').trim();
-      const tool = hash && tools.find(t => t.id === hash) ? hash : null;
-      setActiveTool(tool);
+      setActiveTool(toolIdFromHash());
       setMenuOpen(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };

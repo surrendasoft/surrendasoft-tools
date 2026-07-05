@@ -33,6 +33,7 @@ const CalculatorTool = lazy(() => import('./CalculatorTool.jsx'));
 const UtcConverterTool = lazy(() => import('./UtcConverterTool.jsx'));
 const TimeZoneConverterTool = lazy(() => import('./TimeZoneConverterTool.jsx'));
 const QrCodeTool = lazy(() => import('./QrCodeTool.jsx'));
+const QrTextTransferTool = lazy(() => import('./QrTextTransferTool.jsx'));
 const BgRemoverTool = lazy(() => import('./BgRemoverTool.jsx'));
 const FileViewerTool = lazy(() => import('./FileViewerTool.jsx'));
 const FileConverterTool = lazy(() => import('./FileConverterTool.jsx'));
@@ -84,6 +85,7 @@ export const toolComponents = {
   utc: UtcConverterTool,
   tz: TimeZoneConverterTool,
   qr: QrCodeTool,
+  textqr: QrTextTransferTool,
   bgremove: BgRemoverTool,
   fileview: FileViewerTool,
   fileconv: FileConverterTool,

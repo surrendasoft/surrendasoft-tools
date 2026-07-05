@@ -37,10 +37,23 @@ const workspaceSelectors = {
   utc: '.utc-grid',
   tz: '.tz-controls',
   qr: '.qr-layout',
+  textqr: '.qrt-root',
   bgremove: '.bgr-upload-zone',
   fileconv: '.bgr-upload-zone',
   fileview: '.bgr-upload-zone',
   suggest: '.suggest-form',
+  colour: '.colour-root',
+  pomodoro: '.pom-root',
+  diff: '.diff-root',
+  regex: '.rx-root',
+  urlcode: '.urlcode-root',
+  exif: '.exif-root',
+  canvas: '.cfp-root',
+  timer: '.tmr-root',
+  stopwatch: '.sw-root',
+  multipage: '.mpv-setup',
+  viewtest: '.wvt-row',
+  urlparams: '.upb-input-row',
 };
 
 afterEach(() => {

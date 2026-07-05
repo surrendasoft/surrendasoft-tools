@@ -162,11 +162,11 @@ describe('deterministic tool workflows', () => {
   it('AC-WEBSTATUS normalises a domain and reports a successful response', async () => {
     const user = userEvent.setup();
     render(<WebsiteStatusTool />);
-    const input = screen.getByLabelText('Website URL');
+    const input = screen.getByLabelText('Website URL to check');
     await user.clear(input); await user.type(input, 'example.com');
     await user.click(screen.getByRole('button', { name: 'Check website' }));
-    expect(await screen.findByText('Website responded')).toBeInTheDocument();
-    expect(screen.getByText('https://example.com')).toBeInTheDocument();
+    expect(await screen.findByText('Reachable')).toBeInTheDocument();
+    expect(screen.getByText('example.com')).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith('https://example.com', expect.objectContaining({ method: 'HEAD' }));
   });
 

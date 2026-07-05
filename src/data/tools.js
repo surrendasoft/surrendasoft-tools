@@ -32,6 +32,7 @@ export const tools = [
   { id: 'utc', icon: 'clock', name: 'UTC Converter', description: 'Convert between local time and UTC. Shows Unix timestamp and ISO 8601 format — handy for developers.', tint: 'blue', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
   { id: 'tz', icon: 'earth', name: 'Time Zone Converter', description: 'Pick a time and source timezone to instantly see the equivalent across major world cities.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
   { id: 'qr', icon: 'qr', name: 'QR Code Generator', description: 'Turn any URL, text, or contact detail into a scannable QR code. Download as PNG instantly.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
+  { id: 'textqr', icon: 'qr', name: 'QR Text Transfer', description: 'Move short text and links between phone and computer using a QR code. No backend or upload.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Productivity', 'Utilities'], isNew: true },
   { id: 'bgremove', icon: 'scissors', name: 'Background Remover', description: 'Remove the background from product photos and portraits with edge flood-fill. No AI, no upload, runs locally.', tint: 'purple', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileconv', icon: 'refresh', name: 'Image Converter', description: 'Convert images between JPG, PNG, and WebP. Adjust quality for JPEG and WebP. All conversion runs in your browser.', tint: 'blue', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileview', icon: 'fileSearch', name: 'File Viewer', description: 'Drop any file to view it: images, audio, video, PDF, text, code, JSON, CSV, HTML — or a hex dump for binary files. Edit text and download.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Developer', 'Utilities'] },
@@ -85,6 +86,7 @@ export const TOOL_FLAGS = {
   utc:        true, // Local ↔ UTC converter + Unix timestamp + ISO 8601
   tz:         true, // World time zone converter across major cities
   qr:         true, // QR code generator → PNG download
+  textqr:     true, // Browser-only text transfer encoded inside a QR link
   bgremove:   true, // Edge flood-fill background removal → transparent PNG
   fileconv:   true, // Image format converter: JPG / PNG / WebP + quality control
   fileview:   true, // Universal file viewer: auto-detect + edit text + hex dump for binary
