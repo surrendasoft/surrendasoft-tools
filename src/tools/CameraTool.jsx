@@ -39,11 +39,16 @@ export default function CameraTool() {
   const selected = photos.filter(p => p.selected);
   if (!supported) return <p className="pdf-error">Your browser does not support camera access.</p>;
   return <>
-    <div className="camera-controls">
-      {!active ? <button className="button primary" onClick={start}>Open camera</button> : <><button className="button primary" onClick={snap}><Icon name="spark"/> Take photo</button><button className="button secondary" onClick={switchCamera}>Flip camera</button><button className="button secondary" onClick={stop}>Close camera</button></>}
-    </div>
+    {!active && <div className="camera-controls"><button className="button primary" onClick={start}>Open camera</button></div>}
     {error && <p className="pdf-error">{error}</p>}
-    {active && <div className="camera-viewfinder"><video ref={videoRef} autoPlay playsInline muted className="camera-video"/></div>}
+    {active && <>
+      <div className="camera-viewfinder"><video ref={videoRef} autoPlay playsInline muted className="camera-video"/></div>
+      <div className="camera-controls camera-controls-active">
+        <button className="button primary" onClick={snap}><Icon name="spark"/> Take photo</button>
+        <button className="button secondary" onClick={switchCamera}>Flip camera</button>
+        <button className="button secondary" onClick={stop}>Close camera</button>
+      </div>
+    </>}
     {photos.length > 0 && <>
       <div className="camera-bar"><span>{photos.length} photo{photos.length !== 1 ? 's' : ''} · {selected.length} selected</span><div><button className="button secondary compact" onClick={selectAll}>Select all</button><button className="button secondary compact" onClick={deselectAll}>Deselect all</button><button className="button primary compact" onClick={downloadSelected} disabled={selected.length === 0}>Download {selected.length > 0 ? selected.length : ''} selected</button></div></div>
       <div className="camera-grid">{photos.map((p, i) => <div key={p.url} className={`camera-thumb ${p.selected ? 'sel' : ''}`} onClick={() => toggle(i)}><img src={p.url} alt={`Photo ${i + 1}`}/><div className="camera-thumb-bar"><span>{formatBytes(p.size)}</span><a href={p.url} download={p.name} onClick={e => e.stopPropagation()} className="camera-dl">↓</a><button onClick={e => { e.stopPropagation(); remove(i); }} className="camera-del">×</button></div><div className="camera-check">{p.selected ? <Icon name="check" size={14}/> : null}</div></div>)}</div>
