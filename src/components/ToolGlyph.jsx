@@ -6,7 +6,7 @@ import {
   Image, ImageDown, Images, LayoutGrid, Lightbulb, Link2, MapPin, Mic, Monitor,
   Palette, PenLine, Percent, QrCode, RefreshCw, Scissors, Search,
   Settings, ShieldAlert, Siren, Smile, Sparkles, Star, TestTube2,
-  Text, Timer, TriangleAlert, Type, UserRound, Volume2, Watch, Wrench, Zap,
+  Text, Timer, TriangleAlert, Type, UserRound, Video, Volume2, Watch, Wrench, Zap,
 } from 'lucide-react';
 
 const glyphs = {
@@ -27,7 +27,7 @@ const glyphs = {
   palette: Palette, timer: Timer, gitCompare: GitCompare,
   testTube: TestTube2, link: Link2, fingerprint: Fingerprint,
   alarmClock: AlarmClock, watch: Watch,
-  layoutGrid: LayoutGrid, userRound: UserRound,
+  layoutGrid: LayoutGrid, userRound: UserRound, video: Video,
 };
 
 export default function ToolGlyph({ name, size = 24, strokeWidth = 2 }) {

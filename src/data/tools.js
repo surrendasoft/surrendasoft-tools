@@ -23,7 +23,7 @@ export const tools = [
   { id: 'recorder', icon: 'mic', name: 'Audio Recorder', description: 'Record from your microphone and download the audio. Nothing is uploaded.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
   { id: 'location', icon: 'mapPin', name: 'My Location', description: 'Show your GPS coordinates and accuracy with a map link. Asks permission first.', tint: 'blue', status: 'Available', categories: ['Free', 'Utilities'] },
   { id: 'sysinfo', icon: 'monitor', name: 'IP & System Info', description: 'See your public IP, browser, operating system, screen, timezone, and language.', tint: 'mint', status: 'Available', categories: ['Free', 'Developer', 'Utilities'] },
-  { id: 'camera', icon: 'camera', name: 'Camera', description: 'Take photos from your device camera, then pick which ones to download — or grab them all.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
+  { id: 'camera', icon: 'camera', name: 'Camera', description: 'Take photos or record short video clips from your device camera. Download whatever you keep.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
   { id: 'percent', icon: 'percent', name: 'Percentage Calculator', description: 'Work out percentages, find what percent one number is of another, and calculate percentage change.', tint: 'blue', status: 'Available', categories: ['Free', 'Business', 'Calculators'] },
   { id: 'units', icon: 'swap', name: 'Unit Converter', description: 'Convert between metric and imperial units for length, weight, temperature, volume, speed, and area.', tint: 'mint', status: 'Available', categories: ['Free', 'Calculators'] },
   { id: 'scam', icon: 'shieldAlert', name: 'Scam Email Checker', description: 'Paste a suspicious email to check for scam signals, phishing patterns, and dodgy links.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
@@ -77,7 +77,7 @@ export const TOOL_FLAGS = {
   recorder:   true, // Microphone recorder → download audio
   location:   true, // GPS coordinates + map link
   sysinfo:    true, // Public IP, browser, OS, screen, timezone
-  camera:     true, // Snap photos and download selected shots
+  camera:     true, // Snap photos or record short video clips, download what you keep
   percent:    true, // Percentage of, what % is X of Y, % change
   units:      true, // Length / weight / temp / volume / speed / area converter
   scam:       true, // Pattern-match email body for scam / phishing signals
