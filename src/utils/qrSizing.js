@@ -11,6 +11,9 @@ export const QR_MIN_CANVAS_PX = 260;
 // which tops out around ~750px in this app's widest layout — set the ceiling comfortably
 // above that so CSS, not this cap, is what actually governs realistic dense payloads.
 export const QR_MAX_CANVAS_PX = 900;
+// Animated/chunked pairing QRs always carry a short payload — keep them a comfortable
+// on-screen size on phones and laptops instead of growing with dynamic sizing.
+export const QR_CHUNK_DISPLAY_PX = 280;
 const QR_MARGIN_MODULES = 2;
 
 export function computeQrCanvasSize(text, errorCorrectionLevel) {

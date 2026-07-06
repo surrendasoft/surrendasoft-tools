@@ -6,10 +6,11 @@ import ToolGlyph from '../components/ToolGlyph.jsx';
 import { formatBytes } from '../utils/format.js';
 import {
   assembleQrChunks, buildJoinUrl, connectionCode, createTransferId, decodeLocalSignal, decodeQrChunk,
-  encodeLocalSignal, LOCAL_TRANSFER_CHUNK_SIZE, LOCAL_TRANSFER_FILE_LIMIT, LOCAL_TRANSFER_TEXT_LIMIT,
-  safeFileName, sha256Hex, splitIntoQrChunks, waitForIceGathering,
+  encodeLocalSignal, extractLocalSignal, LOCAL_TRANSFER_CHUNK_SIZE, LOCAL_TRANSFER_FILE_LIMIT,
+  LOCAL_TRANSFER_SIGNAL_PREFIX, LOCAL_TRANSFER_TEXT_LIMIT, safeFileName, sha256Hex, splitIntoQrChunks,
+  waitForIceGathering,
 } from '../utils/localTransfer.js';
-import { computeQrCanvasSize } from '../utils/qrSizing.js';
+import { QR_CHUNK_DISPLAY_PX } from '../utils/qrSizing.js';
 import './LocalDeviceTransferTool.css';
 import './LocalDeviceTransferFallback.css';
 
@@ -23,6 +24,7 @@ export default function LocalDeviceTransferTool() {
   const [status, setStatus] = useState(routeOffer() ? 'Reading the first QR…' : 'Ready to pair');
   const [error, setError] = useState('');
   const [offerLink, setOfferLink] = useState('');
+  const [offerCode, setOfferCode] = useState('');
   const [answerCode, setAnswerCode] = useState('');
   const [manualOffer, setManualOffer] = useState('');
   const [manualAnswer, setManualAnswer] = useState('');
@@ -84,6 +86,7 @@ export default function LocalDeviceTransferTool() {
       await waitForIceGathering(peer);
       const signal = { type: 'offer', sdp: peer.localDescription.sdp, sessionId };
       const encoded = await encodeLocalSignal(signal);
+      setOfferCode(encoded);
       setOfferLink(buildJoinUrl(encoded));
       setVerifyCode(connectionCode(signal));
       setPhase('offer'); setStatus('Waiting for the receiving device');
@@ -223,7 +226,7 @@ export default function LocalDeviceTransferTool() {
   const closeConnection = (reset = true) => {
     channelRef.current?.close(); peerRef.current?.close();
     channelRef.current = null; peerRef.current = null; sessionRef.current = ''; pendingFilesRef.current.clear(); receivingRef.current = null;
-    if (reset) { setPhase('idle'); setStatus('Ready to pair'); setOfferLink(''); setAnswerCode(''); setVerifyCode(''); setError(''); window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#localtransfer`); }
+    if (reset) { setPhase('idle'); setStatus('Ready to pair'); setOfferLink(''); setOfferCode(''); setAnswerCode(''); setVerifyCode(''); setError(''); window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#localtransfer`); }
   };
 
   useEffect(() => {
@@ -243,16 +246,18 @@ export default function LocalDeviceTransferTool() {
     {error && <p className="ldt-error" role="alert"><ToolGlyph name="warning" size={17}/>{error}</p>}
 
     {phase === 'idle' && <section className="ldt-start">
-      <div className="ldt-intro"><ToolGlyph name="monitor" size={38}/><h2>Connect two devices</h2><p>Start on one device, then scan its QR code on the other device. Both devices must keep this page open.</p></div>
+      <div className="ldt-intro"><ToolGlyph name="monitor" size={38}/><h2>Connect two devices</h2><p>Start on one device, then use this page on the other to scan its cycling QR codes. Both devices must keep this page open.</p></div>
       <button className="ldt-start-card" onClick={createHost}><span><ToolGlyph name="qr" size={24}/></span><div><strong>Create pairing QR</strong><small>Best when this device has the files or text to send.</small></div><Icon name="arrow" size={18}/></button>
+      <div className="ldt-step-head second"><span>↔</span><div><strong>Join by scanning the other device</strong><small>Open this page on the receiving device, then point its camera at the cycling QR on the first screen.</small></div></div>
+      <SignalScanner onSignal={createReceiver} scanLabel="Scan pairing QR" idleHint="Point this camera at the cycling QR on the other device" videoLabel="Pairing QR scanner camera" uploadHint="Upload a pairing QR image"/>
       <details className="ldt-manual"><summary>Join with a copied connection code</summary><textarea aria-label="First device connection code" value={manualOffer} onChange={event => setManualOffer(event.target.value)} placeholder="Paste the first device’s connection code"/><button className="button primary" onClick={() => createReceiver(manualOffer)} disabled={!manualOffer.trim()}>Create return QR</button></details>
     </section>}
 
     {phase === 'creating' && <section className="ldt-wait" role="status"><ToolGlyph name="refresh" size={28}/><strong>Gathering local connection details…</strong><span>This can take a few seconds.</span></section>}
 
     {phase === 'offer' && <section className="ldt-pairing">
-      <div className="ldt-step-head"><span>1</span><div><strong>Scan this QR on the receiving device</strong><small>The QR opens this tool and carries a temporary WebRTC offer.</small></div></div>
-      <SignalQr value={offerLink} fileName="local-transfer-first-qr.png"/>
+      <div className="ldt-step-head"><span>1</span><div><strong>Show this QR on the receiving device</strong><small>On the other device, open this tool and choose “Scan pairing QR”. This screen cycles through a few small codes automatically — no need to time it.</small></div></div>
+      <AnimatedQrDisplay value={offerCode} peer={peerRef.current}/>
       <textarea className="ldt-signal-code" aria-label="Pairing link" readOnly value={offerLink}/>
       <div className="ldt-pair-actions"><button className="button secondary" onClick={() => copy(offerLink, 'offer')}><Icon name={copied === 'offer' ? 'check' : 'copy'} size={17}/>{copied === 'offer' ? 'Copied link' : 'Copy pairing link'}</button></div>
       <div className="ldt-one-qr"><ToolGlyph name="warning" size={18}/><p><strong>Why a return scan may appear</strong>One QR introduces the devices. With no signalling backend, the receiving browser still has to return its answer. That second QR is the smallest private fallback.</p></div>
@@ -287,24 +292,12 @@ export default function LocalDeviceTransferTool() {
   </div>;
 }
 
-function SignalQr({ value, fileName }) {
-  const canvasRef = useRef(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    if (!value || !canvasRef.current) return;
-    const width = computeQrCanvasSize(value, 'M');
-    QRCode.toCanvas(canvasRef.current, value, { width, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR is unusually dense. Use the copy-code option instead.' : ''));
-  }, [value]);
-  const download = () => { const link = document.createElement('a'); link.download = fileName; link.href = canvasRef.current.toDataURL('image/png'); link.click(); };
-  return <div className="ldt-qr">{error ? <p className="ldt-error">{error}</p> : <canvas ref={canvasRef}/>}<button className="button secondary compact" onClick={download} disabled={Boolean(error)}><ToolGlyph name="download" size={16}/> Download QR</button></div>;
-}
-
 const ANIMATED_QR_INTERVAL_MS = 1500;
 
-// The "return answer" QR is the one a laptop's fixed-focus camera has to scan, so
-// instead of one dense code it cycles through several small ones (same idea as
-// hardware wallets use for air-gapped signing). Stops cycling on its own once this
-// device's own RTCPeerConnection reports 'connected' — no explicit "done" signal needed.
+// Cycles through several small, low-density QR codes (same idea as hardware wallets
+// use for air-gapped signing) so fixed-focus cameras and smaller screens can read
+// the handshake reliably. Stops on its own once this device's RTCPeerConnection
+// reports 'connected'.
 function AnimatedQrDisplay({ value, peer }) {
   const canvasRef = useRef(null);
   const [chunks, setChunks] = useState([]);
@@ -336,8 +329,7 @@ function AnimatedQrDisplay({ value, peer }) {
   const current = chunks[index] || '';
   useEffect(() => {
     if (!current || !canvasRef.current) return;
-    const width = computeQrCanvasSize(current, 'Q');
-    QRCode.toCanvas(canvasRef.current, current, { width, margin: 2, errorCorrectionLevel: 'Q', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR could not be drawn.' : ''));
+    QRCode.toCanvas(canvasRef.current, current, { width: QR_CHUNK_DISPLAY_PX, margin: 2, errorCorrectionLevel: 'Q', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR could not be drawn.' : ''));
   }, [current]);
 
   return <div className="ldt-qr">
@@ -356,7 +348,13 @@ const QR_QUALITY_STEADY_MS = 800;
 const QR_QUALITY_MOVE_RATIO = 0.12;
 const emptyChunkState = () => ({ sessionId: '', total: 0, compressed: '0', map: new Map() });
 
-export function SignalScanner({ onSignal }) {
+export function SignalScanner({
+  onSignal,
+  scanLabel = 'Scan return QR',
+  idleHint = 'Scan the return QR from this device',
+  videoLabel = 'Return QR scanner camera',
+  uploadHint = 'Upload QR image',
+}) {
   const videoRef = useRef(null), canvasRef = useRef(null), overlayRef = useRef(null);
   const streamRef = useRef(null), frameRef = useRef(null);
   const [active, setActive] = useState(false), [error, setError] = useState('');
@@ -373,7 +371,11 @@ export function SignalScanner({ onSignal }) {
 
   const ingestChunkText = text => {
     let parsed;
-    try { parsed = decodeQrChunk(text); } catch { return false; }
+    try { parsed = decodeQrChunk(text); } catch {
+      const direct = extractLocalSignal(text);
+      if (direct.startsWith(`${LOCAL_TRANSFER_SIGNAL_PREFIX}.`)) { finish(direct); return true; }
+      return false;
+    }
     const state = chunkStateRef.current;
     if (state.sessionId && state.sessionId !== parsed.sessionId) state.map = new Map();
     state.sessionId = parsed.sessionId; state.total = parsed.total; state.compressed = parsed.compressed;
@@ -466,16 +468,16 @@ export function SignalScanner({ onSignal }) {
   return <div className="ldt-scanner">
     <div className={`ldt-viewfinder${active ? ' active' : ''}`}>
       {active ? <>
-        <video ref={videoRef} autoPlay muted playsInline aria-label="Return QR scanner camera"/>
+        <video ref={videoRef} autoPlay muted playsInline aria-label={videoLabel}/>
         <canvas ref={overlayRef} className="ldt-viewfinder-overlay" aria-hidden="true"/>
         <span className={`ldt-scan-hint quality-${quality}`}>{hint}</span>
-      </> : <><ToolGlyph name="camera" size={40}/><span>Scan the return QR from this device</span></>}
+      </> : <><ToolGlyph name="camera" size={40}/><span>{idleHint}</span></>}
       <canvas ref={canvasRef} hidden/>
     </div>
     {progress && progress.total > 1 && <div className="ldt-chunk-progress" role="status" aria-label={`Captured ${progress.captured.size} of ${progress.total} connection QR parts`}>
       {Array.from({ length: progress.total }, (_, part) => <span key={part} className={progress.captured.has(part) ? 'done' : 'pending'}/>)}
     </div>}
-    <div className="ldt-scanner-actions">{active ? <button className="button secondary" onClick={stop}>Stop camera</button> : <button className="button primary" onClick={start}><ToolGlyph name="camera" size={17}/> Scan return QR</button>}<label className="button secondary"><ToolGlyph name="image" size={17}/> Upload QR image<input type="file" accept="image/*" onChange={upload}/></label></div>
+    <div className="ldt-scanner-actions">{active ? <button className="button secondary" onClick={stop}>Stop camera</button> : <button className="button primary" onClick={start}><ToolGlyph name="camera" size={17}/> {scanLabel}</button>}<label className="button secondary"><ToolGlyph name="image" size={17}/> {uploadHint}<input type="file" accept="image/*" onChange={upload}/></label></div>
     {error && <p className="ldt-error">{error}</p>}
   </div>;
 }

@@ -12,7 +12,9 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 // Drives the scanner's camera + jsQR pipeline through fully mocked requestAnimationFrame
 // and getUserMedia, feeding one jsQR result per animation frame — mirrors the real
 // rAF loop in SignalScanner without needing actual video pixels.
-async function startMockedScanner(onSignal) {
+async function startMockedScanner(onSignal, options = {}) {
+  const scanLabel = options.scanLabel || 'Scan return QR';
+  const videoLabel = options.videoLabel || 'Return QR scanner camera';
   const rafQueue = [];
   vi.stubGlobal('requestAnimationFrame', vi.fn(callback => { rafQueue.push(callback); return rafQueue.length; }));
   vi.stubGlobal('cancelAnimationFrame', vi.fn());
@@ -20,9 +22,9 @@ async function startMockedScanner(onSignal) {
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: vi.fn().mockResolvedValue(stream) } });
 
   const user = userEvent.setup();
-  render(<SignalScanner onSignal={onSignal}/>);
-  await user.click(screen.getByRole('button', { name: 'Scan return QR' }));
-  const video = await screen.findByLabelText('Return QR scanner camera');
+  render(<SignalScanner onSignal={onSignal} scanLabel={scanLabel} videoLabel={videoLabel}/>);
+  await user.click(screen.getByRole('button', { name: scanLabel }));
+  const video = await screen.findByLabelText(videoLabel);
   Object.defineProperty(video, 'readyState', { configurable: true, value: 4 });
   Object.defineProperty(video, 'videoWidth', { configurable: true, value: 640 });
   Object.defineProperty(video, 'videoHeight', { configurable: true, value: 480 });
@@ -99,6 +101,12 @@ describe('AC-LOCALTRANSFER local device transfer UI', () => {
     expect(progress.querySelectorAll('span.done')).toHaveLength(1);
     expect(progress.querySelectorAll('span.pending')).toHaveLength(chunkTexts.length - 1);
     expect(onSignal).not.toHaveBeenCalled();
+  });
+
+  it('offers an in-app pairing scanner on the receiving device start screen', () => {
+    render(<LocalDeviceTransferTool />);
+    expect(screen.getByRole('button', { name: 'Scan pairing QR' })).toBeInTheDocument();
+    expect(screen.getByText(/Point this camera at the cycling QR on the other device/i)).toBeInTheDocument();
   });
 
   it('ignores QR frames that are not valid connection chunks and keeps scanning', async () => {

@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 vi.unmock('qrcode');
 
 import { describe, expect, it } from 'vitest';
-import { computeQrCanvasSize, QR_MAX_CANVAS_PX, QR_MIN_CANVAS_PX } from './qrSizing.js';
+import { computeQrCanvasSize, QR_CHUNK_DISPLAY_PX, QR_MAX_CANVAS_PX, QR_MIN_CANVAS_PX } from './qrSizing.js';
 
 describe('AC-LOCALTRANSFER dynamic QR canvas sizing', () => {
   it('grows the canvas as the payload needs more QR modules', () => {
@@ -28,5 +28,10 @@ describe('AC-LOCALTRANSFER dynamic QR canvas sizing', () => {
 
   it('falls back to the minimum size if QRCode.create cannot encode the input', () => {
     expect(computeQrCanvasSize(null, 'M')).toBe(QR_MIN_CANVAS_PX);
+  });
+
+  it('keeps animated chunk QRs at a fixed comfortable display size', () => {
+    expect(QR_CHUNK_DISPLAY_PX).toBeGreaterThanOrEqual(240);
+    expect(QR_CHUNK_DISPLAY_PX).toBeLessThanOrEqual(320);
   });
 });
