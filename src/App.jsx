@@ -67,19 +67,27 @@ export default function App() {
 function Home({ onOpen }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
-  const featuredTools = useMemo(() => featuredToolIds
-    .filter(id => TOOL_FLAGS[id])
-    .map(id => tools.find(tool => tool.id === id))
-    .filter(Boolean), []);
+  const featuredRank = useMemo(() => new Map(featuredToolIds.filter(id => TOOL_FLAGS[id]).map((id, index) => [id, index])), []);
   const visibleTools = useMemo(() => {
     const search = query.trim().toLowerCase();
-    return tools.filter(tool => {
+    const filtered = tools.filter(tool => {
       if (!TOOL_FLAGS[tool.id]) return false;
       const matchesFilter = filter === 'All' || (filter === 'New' && tool.isNew) || tool.categories.includes(filter);
       const searchable = `${tool.name} ${tool.description} ${tool.categories.join(' ')} ${tool.status}`.toLowerCase();
       return matchesFilter && (!search || searchable.includes(search));
     });
-  }, [query, filter]);
+    // On the default, unfiltered view, surface hand-picked tools first so
+    // they're visible without scrolling past a separate showcase section.
+    if (filter !== 'All' || search) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aRank = featuredRank.has(a.id) ? featuredRank.get(a.id) : null;
+      const bRank = featuredRank.has(b.id) ? featuredRank.get(b.id) : null;
+      if (aRank !== null && bRank !== null) return aRank - bRank;
+      if (aRank !== null) return -1;
+      if (bRank !== null) return 1;
+      return 0;
+    });
+  }, [query, filter, featuredRank]);
   return <>
     <section className="hero">
       <div className="hero-orb orb-one"/><div className="hero-orb orb-two"/>
@@ -87,20 +95,15 @@ function Home({ onOpen }) {
         <div className="eyebrow"><span><ToolGlyph name="sparkles" size={14}/></span> SurrendaSoft Tools <b>Beta</b></div>
         <h1>Small tools.<br/><span>Big time savers.</span></h1>
         <p className="hero-copy">Free, privacy-conscious utilities for everyday work. No sign-up, no clutter—just open a tool and get it done.</p>
-        <div className="hero-actions"><button className="button primary" onClick={() => document.querySelector('#tools')?.scrollIntoView({behavior:'smooth'})}>Browse tools <Icon name="arrow"/></button><a className="button secondary" href="#how-it-works"><Icon name="shield"/> Why local-first?</a></div>
+        <div className="hero-actions"><button className="button primary" onClick={() => document.querySelector('#tools')?.scrollIntoView({behavior:'smooth'})}>Browse tools <Icon name="arrow"/></button><a className="hero-secondary-link" href="#how-it-works"><Icon name="shield"/> Why local-first?</a></div>
         <div className="trust-row"><span><i><ToolGlyph name="check" size={12}/></i> Free to use</span><span><i><ToolGlyph name="check" size={12}/></i> No login</span><span><i><ToolGlyph name="check" size={12}/></i> Runs in your browser</span></div>
       </div>
     </section>
 
-    {featuredTools.length > 0 && <section className="featured-section wrap">
-      <div className="section-heading"><div><span className="kicker">HAND-PICKED</span><h2>Featured tools</h2></div><p>Standouts worth a look — built to solve a whole job, not just half of one.</p></div>
-      <div className="featured-grid">{featuredTools.map(tool => <FeaturedCard key={tool.id} tool={tool} onOpen={onOpen}/>)}</div>
-    </section>}
-
     <section className="tools-section wrap" id="tools">
       <div className="directory-controls"><label className="directory-search"><Icon name="search"/><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tools, e.g. PDF, invoice, emoji, AI…" aria-label="Search tools"/>{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={16}/></button>}</label><div className="filter-chips" role="group" aria-label="Filter tools by category">{directoryFilters.map(item => <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}><span className="chip-ico"><ToolGlyph name={categoryIcons[item]} size={14}/></span>{item}</button>)}</div></div>
       <div className="section-heading directory-heading"><div><span className="kicker">TOOL DIRECTORY</span><h2>{filter === 'All' ? 'What do you need to do?' : filter}</h2></div><p>{visibleTools.length} {visibleTools.length === 1 ? 'tool' : 'tools'} · simple jobs that shouldn’t take all day.</p></div>
-      {visibleTools.length ? <div className="tool-grid">{visibleTools.map(tool => <ToolCard key={tool.id} tool={tool} onOpen={onOpen}/>)}</div> : <div className="no-results"><div className="no-results-orb"/><span className="no-results-icon"><ToolGlyph name="lightbulb" size={42}/></span><h3>{query.trim() ? `No results for "${query.trim()}"` : `Nothing in ${filter} yet`}</h3><p>{query.trim() ? "We don't have that one yet — but you can suggest it." : 'Try a different category, or tell us what we should build.'}</p><div className="no-results-actions"><button onClick={() => { setQuery(''); setFilter('All'); }}>Show all tools</button><button className="button primary" onClick={() => onOpen('suggest')}>Suggest a tool <Icon name="arrow" size={16}/></button></div></div>}
+      {visibleTools.length ? <div className="tool-grid">{visibleTools.map(tool => <ToolCard key={tool.id} tool={tool} featured={featuredRank.has(tool.id)} onOpen={onOpen}/>)}</div> : <div className="no-results"><div className="no-results-orb"/><span className="no-results-icon"><ToolGlyph name="lightbulb" size={42}/></span><h3>{query.trim() ? `No results for "${query.trim()}"` : `Nothing in ${filter} yet`}</h3><p>{query.trim() ? "We don't have that one yet — but you can suggest it." : 'Try a different category, or tell us what we should build.'}</p><div className="no-results-actions"><button onClick={() => { setQuery(''); setFilter('All'); }}>Show all tools</button><button className="button primary" onClick={() => onOpen('suggest')}>Suggest a tool <Icon name="arrow" size={16}/></button></div></div>}
       <div className="more-tools"><span>More tools are on the way</span><p>PDF Compressor, Split PDF, and more.</p></div>
     </section>
 
@@ -120,23 +123,10 @@ function Home({ onOpen }) {
   </>;
 }
 
-function FeaturedCard({ tool, onOpen }) {
-  return <article className="featured-card" onClick={() => onOpen(tool.id)}>
-    <div className="featured-card-head">
-      <div className={`tool-icon large ${tool.tint}`}><ToolGlyph name={tool.icon} size={26}/></div>
-      <span className="featured-badge"><ToolGlyph name="sparkles" size={11}/> Featured</span>
-    </div>
-    <h3>{tool.name}</h3>
-    <p>{tool.description}</p>
-    <div className="featured-tags">{(tool.tags || ['Free', 'Browser-based', 'No login']).map(tag => <span key={tag}>{tag}</span>)}</div>
-    <span className="featured-arrow">Try it <Icon name="arrow" size={15}/></span>
-  </article>;
-}
-
-function ToolCard({ tool, onOpen }) {
+function ToolCard({ tool, featured, onOpen }) {
   return <article className="tool-card" onClick={() => onOpen(tool.id)}>
     <div className={`tool-icon ${tool.tint}`}><ToolGlyph name={tool.icon}/></div>
-    <div className="card-body"><div className="status">{tool.isNew && <span className="new-badge">New</span>}<span></span>{tool.status}</div><h3>{tool.name}</h3><p>{tool.description}</p></div>
+    <div className="card-body"><div className="status">{featured && <span className="featured-chip">Featured</span>}{tool.isNew && <span className="new-badge">New</span>}<span></span>{tool.status}</div><h3>{tool.name}</h3><p>{tool.description}</p></div>
     <button className="card-arrow" aria-label={`Open ${tool.name}`}><Icon name="arrow"/></button>
     <div className="card-tags">{(tool.tags || ['Free', 'Browser-based', 'No login']).map(tag => <span key={tag}>{tag}</span>)}</div>
   </article>;

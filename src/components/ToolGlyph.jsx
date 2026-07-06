@@ -5,7 +5,7 @@ import {
   Crosshair, Diamond, DollarSign, Download, Earth, FileImage, FileSearch, FileText, Files,
   Fingerprint, FolderOpen, Gauge, GitCompare, Globe, GraduationCap, Hash,
   Image, ImageDown, Images, LayoutGrid, Lightbulb, Link2, ListChecks, Mail, MapPin, Mic, Monitor,
-  Palette, PenLine, Percent, Phone, Plus, QrCode, Redo2, RefreshCw, Scissors, Search,
+  Palette, PenLine, Percent, Phone, Plus, QrCode, Redo2, RefreshCw, ScanText, Scissors, Search,
   Settings, ShieldAlert, Siren, Smile, Sparkles, Square, Star, TestTube2, Train,
   Text, Timer, Trash2, TriangleAlert, Type, Undo2, UserRound, Video, Volume2, Watch, Workflow, Wrench, X, Zap,
 } from 'lucide-react';
@@ -34,6 +34,7 @@ const glyphs = {
   clipboardList: ClipboardList, mail: Mail, phone: Phone, hash: Hash,
   listChecks: ListChecks, checkSquare: CheckSquare, chevronUp: ChevronUp,
   chevronDown: ChevronDown, plus: Plus, close: X, download: Download,
+  scanText: ScanText,
 };
 
 export default function ToolGlyph({ name, size = 24, strokeWidth = 2, filled = false, className }) {

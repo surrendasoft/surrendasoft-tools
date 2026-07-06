@@ -2,16 +2,10 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import jsQR from 'jsqr';
-import LocalDeviceTransferTool, { buildPeerJoinUrl, readPeerRoute, SignalScanner } from '../tools/LocalDeviceTransferTool.jsx';
+import LocalDeviceTransferTool, { SignalScanner } from '../tools/LocalDeviceTransferTool.jsx';
 import { splitIntoQrChunks } from '../utils/localTransfer.js';
 
 vi.mock('jsqr', () => ({ default: vi.fn() }));
-vi.mock('peerjs', () => ({ default: class MockPeer {
-  constructor() { this.handlers = {}; queueMicrotask(() => this.handlers.open?.('test-peer-id')); }
-  on(event, callback) { this.handlers[event] = callback; return this; }
-  connect() { return { open: false, on: vi.fn(), send: vi.fn(), close: vi.fn() }; }
-  destroy() {}
-} }));
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
@@ -41,37 +35,21 @@ async function startMockedScanner(onSignal, options = {}) {
 }
 
 describe('AC-LOCALTRANSFER local device transfer UI', () => {
-  it('makes one-QR pairing the default and explains the third-party signalling boundary', () => {
+  it('explains the private two-QR fallback and never asks for cloud storage', () => {
     render(<LocalDeviceTransferTool />);
-    expect(screen.getByText('One QR, then direct browser-to-browser transfer')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Create one-QR session/i })).toBeInTheDocument();
-    expect(screen.getByText(/Uses PeerJS Cloud for pairing only/i)).toBeInTheDocument();
-    expect(screen.getByText(/not uploaded or stored by PeerJS or SurrendaSoft/i)).toBeInTheDocument();
+    expect(screen.getByText('Direct browser-to-browser transfer')).toBeInTheDocument();
+    expect(screen.getByText(/No account, cloud file storage/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sending from this device/i })).toBeInTheDocument();
+    expect(screen.getByText(/not uploaded or stored by SurrendaSoft/i)).toBeInTheDocument();
+    expect(screen.getByText(/copies the return code back to the sender/i)).toBeInTheDocument();
   });
 
   it('shows a friendly compatibility error when WebRTC is unavailable', async () => {
     vi.stubGlobal('RTCPeerConnection', undefined);
     const user = userEvent.setup();
     render(<LocalDeviceTransferTool />);
-    await user.click(screen.getByText('Advanced: pair without a third-party signalling service'));
-    await user.click(screen.getByRole('button', { name: /Create private two-QR session/i }));
+    await user.click(screen.getByRole('button', { name: /sending from this device/i }));
     expect(screen.getByRole('alert')).toHaveTextContent(/WebRTC is not available/i);
-  });
-
-  it('creates a short one-QR session link through the signalling provider', async () => {
-    const user = userEvent.setup();
-    render(<LocalDeviceTransferTool />);
-    await user.click(screen.getByRole('button', { name: /Create one-QR session/i }));
-    const field = await screen.findByLabelText('One-QR session link');
-    expect(field.value).toContain('#localtransfer/peer/test-peer-id/');
-    expect(field.value.length).toBeLessThan(300);
-    expect(screen.getByText(/there is no return QR/i)).toBeInTheDocument();
-  });
-
-  it('builds and reads provider pairing routes safely', () => {
-    const link = buildPeerJoinUrl('peer/id', 'secret token');
-    expect(link).toContain('#localtransfer/peer/peer%2Fid/secret%20token');
-    expect(readPeerRoute('#localtransfer/peer/peer%2Fid/secret%20token')).toEqual({ peerId: 'peer/id', token: 'secret token' });
   });
 
   it('attaches the camera stream after the scanner video mounts', async () => {
@@ -126,10 +104,10 @@ describe('AC-LOCALTRANSFER local device transfer UI', () => {
     expect(onSignal).not.toHaveBeenCalled();
   });
 
-  it('retains the in-app animated QR scanner as an advanced fallback', () => {
+  it('offers an in-app pairing scanner on the receiving device start screen', () => {
     render(<LocalDeviceTransferTool />);
-    expect(screen.getByRole('button', { name: 'Scan private pairing QR' })).toBeInTheDocument();
-    expect(screen.getByText(/Point this camera at the animated QR on the other device/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open camera to scan' })).toBeInTheDocument();
+    expect(screen.getByText(/Point this camera at the cycling QR on the sender/i)).toBeInTheDocument();
   });
 
   it('ignores QR frames that are not valid connection chunks and keeps scanning', async () => {

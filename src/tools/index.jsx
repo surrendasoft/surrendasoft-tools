@@ -59,7 +59,11 @@ const WordPdfConverterTool = lazy(() => import('./WordPdfConverterTool.jsx'));
 const MultiStopMapTool = lazy(() => import('./MultiStopMapTool.jsx'));
 const PaymentRequestTool = lazy(() => import('./PaymentRequestTool.jsx'));
 const SimpleInvoicePdfTool = lazy(() => import('./SimpleInvoicePdfTool.jsx'));
+const SimpleQuotePdfTool = lazy(() => import('./SimpleQuotePdfTool.jsx'));
+const SimpleReceiptPdfTool = lazy(() => import('./SimpleReceiptPdfTool.jsx'));
+const PdfPageTool = lazy(() => import('./PdfPageTool.jsx'));
 const QuickChecklistShareTool = lazy(() => import('./QuickChecklistShareTool.jsx'));
+const TextExtractorTool = lazy(() => import('./TextExtractorTool.jsx'));
 
 export const toolComponents = {
   emoji: EmojiTool,
@@ -121,5 +125,9 @@ export const toolComponents = {
   maproute: MultiStopMapTool,
   payrequest: PaymentRequestTool,
   invoicepdf: SimpleInvoicePdfTool,
+  quotepdf: SimpleQuotePdfTool,
+  receiptpdf: SimpleReceiptPdfTool,
+  pdfpages: PdfPageTool,
   checklist: QuickChecklistShareTool,
+  textextract: TextExtractorTool,
 };

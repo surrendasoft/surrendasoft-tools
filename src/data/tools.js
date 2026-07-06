@@ -35,7 +35,7 @@ export const tools = [
   { id: 'tz', icon: 'earth', name: 'Time Zone Converter', description: 'Pick a time and source timezone to instantly see the equivalent across major world cities.', tint: 'purple', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
   { id: 'qr', icon: 'qr', name: 'QR Code Generator', description: 'Turn any URL, text, or contact detail into a scannable QR code. Download as PNG instantly.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business', 'Utilities'] },
   { id: 'textqr', icon: 'qr', name: 'QR Share', description: 'Transfer text, links, or tiny files between devices using a QR code. No backend, account, or upload needed.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Productivity', 'Utilities'], isNew: true, featured: true },
-  { id: 'localtransfer', icon: 'swap', name: 'Local Device Transfer', description: 'Send text and files directly between browsers using WebRTC and simple one-QR pairing.', tint: 'blue', status: 'Experimental', tags: ['Free', 'Peer-to-peer', 'One QR'], categories: ['Free', 'Productivity', 'Utilities', 'Files & PDF'], isNew: true, featured: true },
+  { id: 'localtransfer', icon: 'swap', name: 'Local Device Transfer', description: 'Send text and files directly between browsers on the same network using WebRTC and private QR pairing.', tint: 'blue', status: 'Experimental', tags: ['Free', 'Peer-to-peer', 'No file upload'], categories: ['Free', 'Productivity', 'Utilities', 'Files & PDF'], isNew: true, featured: true },
   { id: 'bgremove', icon: 'scissors', name: 'Background Remover', description: 'Remove the background from product photos and portraits with edge flood-fill. No AI, no upload, runs locally.', tint: 'purple', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileconv', icon: 'refresh', name: 'Image Converter', description: 'Convert images between JPG, PNG, and WebP. Adjust quality for JPEG and WebP. All conversion runs in your browser.', tint: 'blue', status: 'Available', categories: ['Free', 'Files & PDF', 'Media'] },
   { id: 'fileview', icon: 'fileSearch', name: 'File Viewer', description: 'Drop any file to view it: images, audio, video, PDF, text, code, JSON, CSV, HTML — or a hex dump for binary files. Edit text and download.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Developer', 'Utilities'] },
@@ -58,6 +58,10 @@ export const tools = [
   { id: 'maproute', icon: 'mapPin', name: 'Multi-Stop Map Link Generator', description: 'Build one Google Maps route link with an origin, destination, and up to eight stops. Copy, share, or turn it into a QR code.', tint: 'blue', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity', 'Utilities'], isNew: true },
   { id: 'payrequest', icon: 'dollar', name: 'Payment Request Generator', description: 'Create clear SMS and email payment requests using a trusted payment link, bank details, or both. No payment processing.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No payments'], categories: ['Free', 'Business', 'Productivity'], isNew: true },
   { id: 'invoicepdf', icon: 'fileText', name: 'Simple Invoice PDF Generator', description: 'Calculate line items and GST, preview a simple invoice, and create a polished PDF entirely in your browser.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'Downloads PDF'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
+  { id: 'quotepdf', icon: 'fileText', name: 'Quote PDF Generator', description: 'Build a professional quote or estimate with line items, GST, validity dates, and optional deposit — then download a PDF locally.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'Downloads PDF'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
+  { id: 'receiptpdf', icon: 'fileText', name: 'Receipt Generator', description: 'Create a simple paid receipt PDF with amount, payer, payment method, and reference — entirely in your browser.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'Downloads PDF'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
+  { id: 'pdfpages', icon: 'files', name: 'PDF Page Editor', description: 'Reorder, rotate, delete, or extract pages from a PDF in your browser. Nothing is uploaded.', tint: 'blue', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
+  { id: 'textextract', icon: 'scanText', name: 'Text Extractor', description: 'Extract text from images, PDFs, and Word documents in your browser. OCR runs locally with optional CDN language data.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'OCR'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
   { id: 'checklist', icon: 'checkSquare', name: 'Quick Checklist Share', description: 'Create a checklist, tick items off, and share the latest snapshot by link or QR code. No login or live syncing.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity', 'Utilities'], isNew: true },
 ];
 
@@ -122,6 +126,10 @@ export const TOOL_FLAGS = {
   maproute:   true, // Multi-stop Google Maps route link + QR
   payrequest: true, // Payment request message/link generator — no payment processing
   invoicepdf: true, // Simple local invoice preview + PDF generator
+  quotepdf:   true, // Quote / estimate PDF with validity and deposit
+  receiptpdf: true, // Simple paid receipt PDF generator
+  pdfpages:   true, // Reorder, rotate, delete, extract PDF pages locally
+  textextract: true, // OCR/text extraction from images, PDFs, and Word files
   checklist:  true, // Link-based checklist snapshots with QR sharing
 };
 

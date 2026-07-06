@@ -63,7 +63,11 @@ const workspaceSelectors = {
   maproute: '.msm-root',
   payrequest: '.prg-root',
   invoicepdf: '.sip-root',
+  quotepdf: '.sip-root',
+  receiptpdf: '.sip-root',
+  pdfpages: '.ppt-root',
   checklist: '.qcs-root',
+  textextract: '.txtx-root',
 };
 
 afterEach(() => {

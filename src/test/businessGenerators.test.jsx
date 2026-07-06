@@ -4,9 +4,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import MultiStopMapTool from '../tools/MultiStopMapTool.jsx';
 import PaymentRequestTool from '../tools/PaymentRequestTool.jsx';
 import SimpleInvoicePdfTool from '../tools/SimpleInvoicePdfTool.jsx';
+import SimpleQuotePdfTool from '../tools/SimpleQuotePdfTool.jsx';
+import SimpleReceiptPdfTool from '../tools/SimpleReceiptPdfTool.jsx';
 import { buildGoogleMapsRoute } from '../utils/mapRoute.js';
 import { buildBpointUrl, buildPaymentRequest } from '../utils/paymentRequest.js';
 import { calculateInvoiceTotals, createInvoicePdf } from '../utils/simpleInvoice.js';
+import { createQuotePdf, validateQuote } from '../utils/simpleQuote.js';
+import { createReceiptPdf, validateReceipt } from '../utils/simpleReceipt.js';
+import { buildPdfFromPages, createPageState, deletePageState, movePageState, rotatePageState } from '../utils/pdfPages.js';
+import { PDFDocument } from 'pdf-lib';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
@@ -146,5 +152,96 @@ describe('AC-INVOICEPDF calculations and local PDF', () => {
     expect(await screen.findByText('Invoice PDF ready')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Copy payment message' }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Amount due: $165.00'));
+  });
+});
+
+describe('AC-QUOTEPDF quote PDF', () => {
+  const quote = {
+    businessName: 'SurrendaSoft', clientName: 'Example Client', quoteNumber: 'Q-1001', quoteDate: '2026-07-05', validUntil: '2026-08-04', currency: 'AUD', gstMode: 'added',
+    items: [{ description: 'Design', quantity: 2, unitPrice: 100 }], depositAmount: '50', notes: 'Thanks', terms: '30 days', footerText: 'Thank you for considering our quote.',
+  };
+
+  it('requires a quote number and valid line items', () => {
+    expect(validateQuote({ ...quote, quoteNumber: '', items: quote.items })).toMatch(/quote number/i);
+    expect(validateQuote({ ...quote, items: [{ description: '', quantity: 1, unitPrice: 10 }] })).toMatch(/description/i);
+  });
+
+  it('creates a valid browser-generated quote PDF', async () => {
+    const bytes = await createQuotePdf(quote);
+    expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain('%PDF-');
+    expect(bytes.length).toBeGreaterThan(1000);
+  });
+
+  it('supports preview, PDF download, and quote summary copy', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    render(<SimpleQuotePdfTool />);
+    await user.type(screen.getByLabelText(/Business name/), 'SurrendaSoft');
+    await user.type(screen.getByLabelText(/Quote number/), 'Q-1001');
+    await user.type(screen.getByLabelText('Item 1 description'), 'Website support');
+    await user.type(screen.getByLabelText('Item 1 unit price'), '100');
+    await user.click(screen.getByRole('button', { name: 'Preview quote' }));
+    expect(screen.getByLabelText('Quote preview')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Create PDF' }));
+    expect(await screen.findByText('Quote PDF ready')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Copy quote summary' }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Quote Q-1001'));
+  });
+});
+
+describe('AC-RECEIPTPDF receipt PDF', () => {
+  const receipt = {
+    businessName: 'SurrendaSoft', receiptNumber: 'R-1001', receiptDate: '2026-07-05', paidBy: 'Example Client', amountPaid: '220', currency: 'AUD', paymentMethod: 'Bank transfer', invoiceReference: 'INV-1001', description: 'Website support', footerText: 'Thank you for your payment.',
+  };
+
+  it('validates required receipt fields', () => {
+    expect(validateReceipt({ ...receipt, businessName: '' })).toMatch(/business name/i);
+    expect(validateReceipt({ ...receipt, amountPaid: '0' })).toMatch(/greater than zero/i);
+  });
+
+  it('creates a valid browser-generated receipt PDF', async () => {
+    const bytes = await createReceiptPdf(receipt);
+    expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain('%PDF-');
+    expect(bytes.length).toBeGreaterThan(500);
+  });
+
+  it('supports preview, PDF download, and receipt text copy', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    render(<SimpleReceiptPdfTool />);
+    await user.type(screen.getByLabelText(/Business name/), 'SurrendaSoft');
+    await user.type(screen.getByLabelText(/Receipt number/), 'R-1001');
+    await user.type(screen.getByLabelText(/Paid by/), 'Example Client');
+    await user.type(screen.getByLabelText(/Amount paid/), '220');
+    await user.click(screen.getByRole('button', { name: 'Preview receipt' }));
+    expect(screen.getByLabelText('Receipt preview')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Create PDF' }));
+    expect(await screen.findByText('Receipt PDF ready')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Copy receipt text' }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Receipt R-1001'));
+  });
+});
+
+describe('AC-PDFPAGES page editing helpers', () => {
+  it('rotates, moves, deletes, and rebuilds page order', async () => {
+    let pages = createPageState(3);
+    pages = rotatePageState(pages, pages[0].id, 1);
+    expect(pages[0].rotation).toBe(90);
+    pages = movePageState(pages, pages[2].id, -1);
+    expect(pages[1].sourceIndex).toBe(2);
+    pages = deletePageState(pages, pages[0].id);
+    expect(pages).toHaveLength(2);
+
+    const source = await PDFDocument.create();
+    source.addPage(); source.addPage(); source.addPage();
+    const sourceBytes = await source.save();
+    const bytes = await buildPdfFromPages(sourceBytes, pages);
+    const rebuilt = await PDFDocument.load(bytes);
+    expect(rebuilt.getPageCount()).toBe(2);
+
+    const onlyPage = pages[0];
+    pages = deletePageState(pages, onlyPage.id);
+    expect(pages).toHaveLength(1);
+    expect(() => deletePageState(pages, pages[0].id)).toThrow(/at least one page/i);
   });
 });
