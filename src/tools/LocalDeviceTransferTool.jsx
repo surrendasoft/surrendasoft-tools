@@ -9,6 +9,7 @@ import {
   encodeLocalSignal, LOCAL_TRANSFER_CHUNK_SIZE, LOCAL_TRANSFER_FILE_LIMIT, LOCAL_TRANSFER_TEXT_LIMIT,
   safeFileName, sha256Hex, splitIntoQrChunks, waitForIceGathering,
 } from '../utils/localTransfer.js';
+import { computeQrCanvasSize } from '../utils/qrSizing.js';
 import './LocalDeviceTransferTool.css';
 import './LocalDeviceTransferFallback.css';
 
@@ -291,7 +292,8 @@ function SignalQr({ value, fileName }) {
   const [error, setError] = useState('');
   useEffect(() => {
     if (!value || !canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, value, { width: 340, margin: 2, errorCorrectionLevel: 'L', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR is unusually dense. Use the copy-code option instead.' : ''));
+    const width = computeQrCanvasSize(value, 'M');
+    QRCode.toCanvas(canvasRef.current, value, { width, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR is unusually dense. Use the copy-code option instead.' : ''));
   }, [value]);
   const download = () => { const link = document.createElement('a'); link.download = fileName; link.href = canvasRef.current.toDataURL('image/png'); link.click(); };
   return <div className="ldt-qr">{error ? <p className="ldt-error">{error}</p> : <canvas ref={canvasRef}/>}<button className="button secondary compact" onClick={download} disabled={Boolean(error)}><ToolGlyph name="download" size={16}/> Download QR</button></div>;
@@ -334,7 +336,8 @@ function AnimatedQrDisplay({ value, peer }) {
   const current = chunks[index] || '';
   useEffect(() => {
     if (!current || !canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, current, { width: 340, margin: 2, errorCorrectionLevel: 'Q', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR could not be drawn.' : ''));
+    const width = computeQrCanvasSize(current, 'Q');
+    QRCode.toCanvas(canvasRef.current, current, { width, margin: 2, errorCorrectionLevel: 'Q', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'This connection QR could not be drawn.' : ''));
   }, [current]);
 
   return <div className="ldt-qr">

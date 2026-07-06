@@ -103,5 +103,6 @@ globalThis.fetch = vi.fn(() => Promise.resolve({
 vi.mock('qrcode', () => ({
   default: {
     toCanvas: vi.fn((canvas, text, options, callback) => callback?.(null)),
+    create: vi.fn(text => ({ modules: { size: 25 + Math.floor(String(text || '').length / 20) } })),
   },
 }));
