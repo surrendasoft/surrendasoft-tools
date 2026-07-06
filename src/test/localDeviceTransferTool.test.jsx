@@ -2,16 +2,13 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import jsQR from 'jsqr';
-import LocalDeviceTransferTool, { SignalScanner } from '../tools/LocalDeviceTransferTool.jsx';
+import LocalDeviceTransferTool, { QrChunkPager, SignalScanner } from '../tools/LocalDeviceTransferTool.jsx';
 import { splitIntoQrChunks } from '../utils/localTransfer.js';
 
 vi.mock('jsqr', () => ({ default: vi.fn() }));
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-// Drives the scanner's camera + jsQR pipeline through fully mocked requestAnimationFrame
-// and getUserMedia, feeding one jsQR result per animation frame — mirrors the real
-// rAF loop in SignalScanner without needing actual video pixels.
 async function startMockedScanner(onSignal, options = {}) {
   const scanLabel = options.scanLabel || 'Scan return QR';
   const videoLabel = options.videoLabel || 'Return QR scanner camera';
@@ -39,16 +36,16 @@ describe('AC-LOCALTRANSFER local device transfer UI', () => {
     render(<LocalDeviceTransferTool />);
     expect(screen.getByText('Direct browser-to-browser transfer')).toBeInTheDocument();
     expect(screen.getByText(/No account, cloud file storage/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sending from this device/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Show connection QR/i })).toBeInTheDocument();
     expect(screen.getByText(/not uploaded or stored by SurrendaSoft/i)).toBeInTheDocument();
-    expect(screen.getByText(/copies the return code back to the sender/i)).toBeInTheDocument();
+    expect(screen.getByText(/copies a return code back/i)).toBeInTheDocument();
   });
 
   it('shows a friendly compatibility error when WebRTC is unavailable', async () => {
     vi.stubGlobal('RTCPeerConnection', undefined);
     const user = userEvent.setup();
     render(<LocalDeviceTransferTool />);
-    await user.click(screen.getByRole('button', { name: /sending from this device/i }));
+    await user.click(screen.getByRole('button', { name: /Show connection QR/i }));
     expect(screen.getByRole('alert')).toHaveTextContent(/WebRTC is not available/i);
   });
 
@@ -88,7 +85,7 @@ describe('AC-LOCALTRANSFER local device transfer UI', () => {
     await waitFor(() => expect(onSignal).toHaveBeenCalledWith(encoded));
   });
 
-  it('shows progress dots reflecting partial capture before the sequence completes', async () => {
+  it('shows numbered capture progress before the sequence completes', async () => {
     const encoded = `sslt1.0.${'ABCDEFGHJKMNPQRSTVWXYZ0123456789'.repeat(6)}`;
     const chunkTexts = splitIntoQrChunks(encoded, 25);
     expect(chunkTexts.length).toBeGreaterThan(2);
@@ -99,15 +96,29 @@ describe('AC-LOCALTRANSFER local device transfer UI', () => {
     flushFrame();
 
     const progress = await screen.findByRole('status', { name: new RegExp(`Captured 1 of ${chunkTexts.length}`, 'i') });
-    expect(progress.querySelectorAll('span.done')).toHaveLength(1);
-    expect(progress.querySelectorAll('span.pending')).toHaveLength(chunkTexts.length - 1);
+    expect(progress.querySelectorAll('.ldt-chunk-part.done')).toHaveLength(1);
+    expect(screen.getByText(/Still need part/i)).toBeInTheDocument();
     expect(onSignal).not.toHaveBeenCalled();
   });
 
-  it('offers an in-app pairing scanner on the receiving device start screen', () => {
+  it('offers an in-app pairing scanner on the start screen', () => {
     render(<LocalDeviceTransferTool />);
     expect(screen.getByRole('button', { name: 'Open camera to scan' })).toBeInTheDocument();
-    expect(screen.getByText(/Point this camera at the cycling QR on the sender/i)).toBeInTheDocument();
+    expect(screen.getByText(/Point at the connection QR on the other screen/i)).toBeInTheDocument();
+  });
+
+  it('lets users jump directly to a numbered QR part in the pager', async () => {
+    const encoded = `sslt1.1.${'ABCDEFGHJKMNPQRSTVWXYZ0123456789'.repeat(6)}`;
+    const chunks = splitIntoQrChunks(encoded);
+    expect(chunks.length).toBeGreaterThan(2);
+
+    const user = userEvent.setup();
+    render(<QrChunkPager value={encoded} peer={null} roleLabel="Test QR"/>);
+
+    expect(screen.getByRole('tab', { name: 'Show part 1' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('tab', { name: `Show part ${chunks.length}` }));
+    expect(screen.getByRole('tab', { name: `Show part ${chunks.length}` })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText(new RegExp(`Part ${chunks.length} of ${chunks.length}`))).toBeInTheDocument();
   });
 
   it('ignores QR frames that are not valid connection chunks and keeps scanning', async () => {
