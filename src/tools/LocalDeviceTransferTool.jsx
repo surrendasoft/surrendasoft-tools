@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import Peer from 'peerjs';
 import QRCode from 'qrcode';
 import jsQR from 'jsqr';
 import Icon from '../components/Icon.jsx';
@@ -19,11 +20,20 @@ const routeOffer = () => {
   return match?.[1] || '';
 };
 
+export const readPeerRoute = (hash = window.location.hash) => {
+  const match = String(hash).match(/^#localtransfer\/peer\/([^/]+)\/([^/]+)$/);
+  return match ? { peerId: decodeURIComponent(match[1]), token: decodeURIComponent(match[2]) } : null;
+};
+
+export const buildPeerJoinUrl = (peerId, token) => `${window.location.origin}${window.location.pathname}${window.location.search}#localtransfer/peer/${encodeURIComponent(peerId)}/${encodeURIComponent(token)}`;
+
 export default function LocalDeviceTransferTool() {
-  const [phase, setPhase] = useState(routeOffer() ? 'joining' : 'idle');
-  const [status, setStatus] = useState(routeOffer() ? 'Reading the first QR…' : 'Ready to pair');
+  const peerRoute = readPeerRoute();
+  const [phase, setPhase] = useState(peerRoute ? 'cloud-joining' : routeOffer() ? 'joining' : 'idle');
+  const [status, setStatus] = useState(peerRoute ? 'Joining the one-QR session…' : routeOffer() ? 'Reading the first QR…' : 'Ready to pair');
   const [error, setError] = useState('');
   const [offerLink, setOfferLink] = useState('');
+  const [easyLink, setEasyLink] = useState('');
   const [offerCode, setOfferCode] = useState('');
   const [answerCode, setAnswerCode] = useState('');
   const [manualOffer, setManualOffer] = useState('');
@@ -38,6 +48,8 @@ export default function LocalDeviceTransferTool() {
   const [activity, setActivity] = useState('');
   const [copied, setCopied] = useState('');
   const peerRef = useRef(null);
+  const signallingPeerRef = useRef(null);
+  const signallingTimerRef = useRef(null);
   const channelRef = useRef(null);
   const sessionRef = useRef('');
   const pendingFilesRef = useRef(new Map());
@@ -71,6 +83,68 @@ export default function LocalDeviceTransferTool() {
     channel.onerror = () => setFailure('The transfer channel reported an error.');
     channel.onmessage = event => handleChannelMessage(event.data);
   };
+
+  const configurePeerJsConnection = connection => {
+    const channel = {
+      get readyState() { return connection.open ? 'open' : 'connecting'; },
+      get bufferedAmount() { return connection.dataChannel?.bufferedAmount || 0; },
+      set bufferedAmountLowThreshold(value) { if (connection.dataChannel) connection.dataChannel.bufferedAmountLowThreshold = value; },
+      send: value => connection.send(value),
+      close: () => connection.close(),
+    };
+    channelRef.current = channel;
+    connection.on('open', () => { clearTimeout(signallingTimerRef.current); setPhase('connected'); setStatus('Devices connected directly'); setError(''); });
+    connection.on('data', data => handleChannelMessage(data));
+    connection.on('close', () => setStatus('Connection closed'));
+    connection.on('error', () => setFailure('The peer-to-peer transfer channel reported an error. Try creating a new session.'));
+  };
+
+  const handlePeerServiceError = serviceError => {
+    clearTimeout(signallingTimerRef.current);
+    const unavailable = serviceError?.type === 'peer-unavailable';
+    setFailure(unavailable
+      ? 'That one-QR session is no longer available. Ask the first device to create a new QR.'
+      : 'The third-party pairing service could not connect the devices. Check your internet connection or use the advanced private fallback.');
+  };
+
+  function createEasyHost() {
+    closeConnection(false);
+    setError(''); setStatus('Creating a one-QR session…'); setPhase('cloud-creating');
+    const token = createTransferId();
+    sessionRef.current = token;
+    setVerifyCode(connectionCode({ sessionId: token }));
+    const peer = new Peer();
+    signallingPeerRef.current = peer;
+    signallingTimerRef.current = window.setTimeout(() => handlePeerServiceError({ type: 'network' }), 15000);
+    peer.on('open', peerId => {
+      clearTimeout(signallingTimerRef.current);
+      setEasyLink(buildPeerJoinUrl(peerId, token));
+      setPhase('cloud-host'); setStatus('Waiting for the other device to scan');
+    });
+    peer.on('connection', connection => {
+      if (connection.metadata?.token !== token) { connection.close(); return; }
+      configurePeerJsConnection(connection);
+      setStatus('Connecting the devices…');
+    });
+    peer.on('error', handlePeerServiceError);
+    peer.on('disconnected', () => { if (phase !== 'connected') setStatus('Reconnecting to the pairing service…'); });
+  }
+
+  function joinEasySession({ peerId, token }) {
+    closeConnection(false);
+    setError(''); setStatus('Joining the one-QR session…'); setPhase('cloud-joining');
+    sessionRef.current = token;
+    setVerifyCode(connectionCode({ sessionId: token }));
+    const peer = new Peer();
+    signallingPeerRef.current = peer;
+    signallingTimerRef.current = window.setTimeout(() => handlePeerServiceError({ type: 'network' }), 15000);
+    peer.on('open', () => {
+      const connection = peer.connect(peerId, { reliable: true, serialization: 'binary', metadata: { token } });
+      configurePeerJsConnection(connection);
+      setStatus('Connecting directly to the first device…');
+    });
+    peer.on('error', handlePeerServiceError);
+  }
 
   async function createHost() {
     if (!globalThis.RTCPeerConnection) { setFailure('WebRTC is not available in this browser. Try a current version of Chrome, Edge, or Safari.'); return; }
@@ -224,36 +298,52 @@ export default function LocalDeviceTransferTool() {
     } catch { setError('Clipboard access is blocked here. Select and copy the connection code shown below.'); }
   };
   const closeConnection = (reset = true) => {
+    clearTimeout(signallingTimerRef.current);
     channelRef.current?.close(); peerRef.current?.close();
-    channelRef.current = null; peerRef.current = null; sessionRef.current = ''; pendingFilesRef.current.clear(); receivingRef.current = null;
-    if (reset) { setPhase('idle'); setStatus('Ready to pair'); setOfferLink(''); setOfferCode(''); setAnswerCode(''); setVerifyCode(''); setError(''); window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#localtransfer`); }
+    signallingPeerRef.current?.destroy();
+    channelRef.current = null; peerRef.current = null; signallingPeerRef.current = null; sessionRef.current = ''; pendingFilesRef.current.clear(); receivingRef.current = null;
+    if (reset) { setPhase('idle'); setStatus('Ready to pair'); setEasyLink(''); setOfferLink(''); setOfferCode(''); setAnswerCode(''); setVerifyCode(''); setError(''); window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#localtransfer`); }
   };
 
   useEffect(() => {
+    const easy = readPeerRoute();
     const code = routeOffer();
-    const timer = code ? window.setTimeout(() => createReceiver(code), 0) : null;
+    const timer = easy
+      ? window.setTimeout(() => joinEasySession(easy), 0)
+      : code ? window.setTimeout(() => createReceiver(code), 0) : null;
     return () => {
       if (timer) clearTimeout(timer);
+      clearTimeout(signallingTimerRef.current);
       channelRef.current?.close(); peerRef.current?.close();
+      signallingPeerRef.current?.destroy();
       receivedUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
 
   const progress = transfer?.total ? Math.min(100, Math.round((transfer.done / transfer.total) * 100)) : 0;
   return <div className="ldt-root">
-    <div className="ldt-local"><ToolGlyph name="swap" size={22}/><div><strong>Direct browser-to-browser transfer</strong><span>No account, cloud file storage, or transfer-content upload.</span></div></div>
+    <div className="ldt-local"><ToolGlyph name="swap" size={22}/><div><strong>One QR, then direct browser-to-browser transfer</strong><span>PeerJS Cloud introduces the browsers. Your text and files are not uploaded to it.</span></div></div>
     <div className="ldt-status" data-phase={phase}><span className="ldt-status-dot"/><div><strong>{status}</strong>{verifyCode && <small>Pairing verification code: <b>{verifyCode}</b></small>}</div></div>
     {error && <p className="ldt-error" role="alert"><ToolGlyph name="warning" size={17}/>{error}</p>}
 
     {phase === 'idle' && <section className="ldt-start">
-      <div className="ldt-intro"><ToolGlyph name="monitor" size={38}/><h2>Connect two devices</h2><p>Start on one device, then use this page on the other to scan its cycling QR codes. Both devices must keep this page open.</p></div>
-      <button className="ldt-start-card" onClick={createHost}><span><ToolGlyph name="qr" size={24}/></span><div><strong>Create pairing QR</strong><small>Best when this device has the files or text to send.</small></div><Icon name="arrow" size={18}/></button>
-      <div className="ldt-step-head second"><span>↔</span><div><strong>Join by scanning the other device</strong><small>Open this page on the receiving device, then point its camera at the cycling QR on the first screen.</small></div></div>
-      <SignalScanner onSignal={createReceiver} scanLabel="Scan pairing QR" idleHint="Point this camera at the cycling QR on the other device" videoLabel="Pairing QR scanner camera" uploadHint="Upload a pairing QR image"/>
-      <details className="ldt-manual"><summary>Join with a copied connection code</summary><textarea aria-label="First device connection code" value={manualOffer} onChange={event => setManualOffer(event.target.value)} placeholder="Paste the first device’s connection code"/><button className="button primary" onClick={() => createReceiver(manualOffer)} disabled={!manualOffer.trim()}>Create return QR</button></details>
+      <div className="ldt-intro"><ToolGlyph name="monitor" size={38}/><h2>Connect two devices</h2><p>Create one QR here, then scan it with the other device’s normal camera. The receiving page opens and connects automatically.</p></div>
+      <button className="ldt-start-card ldt-easy-start" onClick={createEasyHost}><span><ToolGlyph name="qr" size={24}/></span><div><strong>Create one-QR session</strong><small>Recommended · simplest setup · no return scan</small></div><Icon name="arrow" size={18}/></button>
+      <p className="ldt-provider-note"><ToolGlyph name="globe" size={16}/><span><strong>Uses PeerJS Cloud for pairing only.</strong> The service sees temporary connection identifiers, not the text or files you transfer.</span></p>
+      <details className="ldt-advanced"><summary>Advanced: pair without a third-party signalling service</summary><p>This older method keeps signalling inside QR codes, but it requires the animated offer and return scans.</p><button className="button secondary" onClick={createHost}><ToolGlyph name="qr" size={17}/> Create private two-QR session</button><SignalScanner onSignal={createReceiver} scanLabel="Scan private pairing QR" idleHint="Point this camera at the animated QR on the other device" videoLabel="Private pairing QR scanner camera" uploadHint="Upload private pairing QR"/><details className="ldt-manual"><summary>Join with a copied connection code</summary><textarea aria-label="First device connection code" value={manualOffer} onChange={event => setManualOffer(event.target.value)} placeholder="Paste the first device’s connection code"/><button className="button primary" onClick={() => createReceiver(manualOffer)} disabled={!manualOffer.trim()}>Create return QR</button></details></details>
     </section>}
 
-    {phase === 'creating' && <section className="ldt-wait" role="status"><ToolGlyph name="refresh" size={28}/><strong>Gathering local connection details…</strong><span>This can take a few seconds.</span></section>}
+    {(phase === 'cloud-creating' || phase === 'cloud-joining') && <section className="ldt-wait" role="status"><ToolGlyph name="refresh" size={28}/><strong>{phase === 'cloud-creating' ? 'Creating your one-QR session…' : 'Connecting to the first device…'}</strong><span>PeerJS Cloud is exchanging temporary WebRTC connection details.</span></section>}
+
+    {phase === 'cloud-host' && <section className="ldt-pairing ldt-easy-pairing">
+      <div className="ldt-step-head"><span>1</span><div><strong>Scan once with the other device</strong><small>Use its normal Camera app. The link opens this tool and connects automatically—there is no return QR.</small></div></div>
+      <SimpleQrDisplay value={easyLink}/>
+      <textarea className="ldt-signal-code" aria-label="One-QR session link" readOnly value={easyLink}/>
+      <div className="ldt-pair-actions"><button className="button secondary" onClick={() => copy(easyLink, 'easy')}><Icon name={copied === 'easy' ? 'check' : 'copy'} size={17}/>{copied === 'easy' ? 'Copied link' : 'Copy session link'}</button></div>
+      <div className="ldt-one-qr success"><ToolGlyph name="shieldAlert" size={18}/><p><strong>Your transfer still travels peer-to-peer.</strong> PeerJS Cloud only helps the two browsers find each other; it does not carry or store your text and files.</p></div>
+    </section>}
+
+    {phase === 'creating' && <section className="ldt-wait" role="status"><ToolGlyph name="refresh" size={28}/><strong>Gathering private connection details…</strong><span>This can take a few seconds.</span></section>}
 
     {phase === 'offer' && <section className="ldt-pairing">
       <div className="ldt-step-head"><span>1</span><div><strong>Show this QR on the receiving device</strong><small>On the other device, open this tool and choose “Scan pairing QR”. This screen cycles through a few small codes automatically — no need to time it.</small></div></div>
@@ -288,11 +378,21 @@ export default function LocalDeviceTransferTool() {
       {(receivedTexts.length > 0 || receivedFiles.length > 0) && <div className="ldt-received"><h3>Received on this device</h3>{receivedTexts.map(item => <article key={item.id}><div><ToolGlyph name="text" size={18}/><strong>Received text</strong></div><pre>{item.text}</pre><button onClick={() => copy(item.text, item.id)}><Icon name={copied === item.id ? 'check' : 'copy'} size={16}/>{copied === item.id ? 'Copied' : 'Copy text'}</button></article>)}{receivedFiles.map(file => <article key={file.id}><div><ToolGlyph name="fileText" size={18}/><strong>{file.name}</strong><span>{formatBytes(file.size)} · {file.hashAvailable ? file.verified ? 'SHA-256 verified' : 'Integrity check failed' : 'Received'}</span></div><a className="button secondary compact" href={file.url} download={file.name}><ToolGlyph name="download" size={16}/> Download</a></article>)}</div>}
     </section>}
 
-    <div className="ldt-privacy"><Icon name="shield" size={19}/><p><strong>Local-first and encrypted in transit.</strong> Pairing data is exchanged through QR codes. Transfer contents travel through WebRTC and are not uploaded or stored by SurrendaSoft. Guest Wi-Fi, VPNs, and router client isolation can block local connections.</p></div>
+    <div className="ldt-privacy"><Icon name="shield" size={19}/><p><strong>Encrypted peer-to-peer transfer.</strong> The recommended flow uses PeerJS Cloud for temporary signalling only. Transfer contents travel through WebRTC and are not uploaded or stored by PeerJS or SurrendaSoft. Network policies can still block direct connections.</p></div>
   </div>;
 }
 
 const ANIMATED_QR_INTERVAL_MS = 1500;
+
+function SimpleQrDisplay({ value }) {
+  const canvasRef = useRef(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    if (!value || !canvasRef.current) return;
+    QRCode.toCanvas(canvasRef.current, value, { width: 320, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#10183e', light: '#ffffff' } }, qrError => setError(qrError ? 'The one-QR session could not be drawn. Copy the session link instead.' : ''));
+  }, [value]);
+  return <div className="ldt-qr">{error ? <p className="ldt-error">{error}</p> : <canvas ref={canvasRef}/>}<p className="ldt-qr-caption">One scan · opens and connects automatically</p></div>;
+}
 
 // Cycles through several small, low-density QR codes (same idea as hardware wallets
 // use for air-gapped signing) so fixed-focus cameras and smaller screens can read
