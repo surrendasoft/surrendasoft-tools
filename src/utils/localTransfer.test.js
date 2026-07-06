@@ -16,9 +16,14 @@ describe('AC-LOCALTRANSFER WebRTC QR signalling', () => {
     expect(connectionCode(offer)).toBe(connectionCode(answer));
   });
 
-  it('extracts routed signals and rejects invalid connection codes', async () => {
+  it('extracts routed signals, strips whitespace, and rejects invalid connection codes', async () => {
     expect(extractLocalSignal('https://tools.example/#localtransfer/join/sslt1.0.abc')).toBe('sslt1.0.abc');
+    expect(extractLocalSignal('sslt1.0.ab c\n def')).toBe('sslt1.0.abcdef');
     await expect(decodeLocalSignal('not-a-connection-code')).rejects.toThrow(/could not be read/i);
+  });
+
+  it('rejects damaged base32 instead of silently corrupting the payload', () => {
+    expect(() => base32ToBytes('ABC!123')).toThrow(/damaged or incomplete/i);
   });
 
   it('defines safe browser transfer limits and filenames', () => {

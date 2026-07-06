@@ -34,13 +34,13 @@ export function bytesToBase32(bytes) {
 }
 
 export function base32ToBytes(encoded) {
-  const clean = String(encoded || '').toUpperCase();
+  const clean = String(encoded || '').toUpperCase().replace(/\s+/g, '');
   let bits = 0;
   let value = 0;
   const bytes = [];
   for (let index = 0; index < clean.length; index += 1) {
     const digit = BASE32_ALPHABET.indexOf(clean[index]);
-    if (digit === -1) continue;
+    if (digit === -1) throw new Error('This connection code looks damaged or incomplete.');
     value = (value << 5) | digit;
     bits += 5;
     if (bits >= 8) {
@@ -91,16 +91,37 @@ export async function encodeLocalSignal(signal) {
   return `${LOCAL_TRANSFER_SIGNAL_PREFIX}.${packed.compressed ? '1' : '0'}.${packed.data}`;
 }
 
+export function extractLocalSignal(input) {
+  let value = String(input || '').trim();
+  const route = value.match(/#localtransfer\/(?:join|answer)\/([^\s#]+)/i);
+  if (route) value = route[1];
+  return value.replace(/\s+/g, '');
+}
+
+function parseEncodedSignal(value) {
+  const firstDot = value.indexOf('.');
+  const secondDot = value.indexOf('.', firstDot + 1);
+  if (firstDot < 0 || secondDot < 0) return null;
+  const prefix = value.slice(0, firstDot);
+  const compressed = value.slice(firstDot + 1, secondDot);
+  const data = value.slice(secondDot + 1).toUpperCase();
+  if (prefix !== LOCAL_TRANSFER_SIGNAL_PREFIX || !['0', '1'].includes(compressed) || !data) return null;
+  return { compressed, data };
+}
+
 export async function decodeLocalSignal(input) {
   const value = extractLocalSignal(input);
-  const [prefix, compressed, data] = value.split('.');
-  if (prefix !== LOCAL_TRANSFER_SIGNAL_PREFIX || !['0', '1'].includes(compressed) || !data) throw new Error('This connection code could not be read.');
+  const parsed = parseEncodedSignal(value);
+  if (!parsed) throw new Error('This connection code could not be read. Paste the full code with no line breaks, or finish scanning every QR part.');
   try {
-    const signal = await unpackJsonBase32(data, compressed === '1');
-    if (signal?.v !== 1 || !['offer', 'answer'].includes(signal.type) || typeof signal.sdp !== 'string' || !signal.sdp) throw new Error();
+    const signal = await unpackJsonBase32(parsed.data, parsed.compressed === '1');
+    if (signal?.v !== 1 || !['offer', 'answer'].includes(signal.type) || typeof signal.sdp !== 'string' || !signal.sdp) throw new Error('invalid');
     return signal;
-  } catch {
-    throw new Error('This connection code could not be read.');
+  } catch (error) {
+    if (String(error?.message || '').includes('decompress') || String(error?.message || '').includes('damaged or incomplete')) {
+      throw new Error('This connection code looks incomplete. Copy the entire code again, or wait until every QR part shows as captured.');
+    }
+    throw new Error('This connection code could not be read. Paste the full code with no line breaks, or finish scanning every QR part.');
   }
 }
 
@@ -117,7 +138,7 @@ export function encodeQrChunk({ sessionId, index, total, compressed, data }) {
 }
 
 export function decodeQrChunk(text) {
-  const value = String(text || '').trim();
+  const value = String(text || '').trim().replace(/\s+/g, '');
   const parts = value.split('.');
   if (parts.length !== 6) throw new Error('This QR part could not be read.');
   const [prefix, sessionId, indexText, totalText, compressed, data] = parts;
@@ -126,19 +147,20 @@ export function decodeQrChunk(text) {
   const valid = prefix === LOCAL_TRANSFER_CHUNK_PREFIX && sessionId && ['0', '1'].includes(compressed)
     && Number.isInteger(index) && Number.isInteger(total) && total > 0 && index >= 0 && index < total && data;
   if (!valid) throw new Error('This QR part could not be read.');
-  return { sessionId, index, total, compressed, data };
+  return { sessionId, index, total, compressed, data: data.toUpperCase() };
 }
 
 export function splitIntoQrChunks(encodedSignal, targetCharsPerChunk = LOCAL_TRANSFER_QR_CHUNK_CHARS) {
-  const value = String(encodedSignal || '');
-  const [prefix, compressed, data] = value.split('.');
-  if (prefix !== LOCAL_TRANSFER_SIGNAL_PREFIX || !['0', '1'].includes(compressed) || !data) throw new Error('This connection code could not be split into parts.');
+  const value = extractLocalSignal(encodedSignal);
+  const parsed = parseEncodedSignal(value);
+  if (!parsed) throw new Error('This connection code could not be split into parts.');
   const sessionId = randomChunkSessionId();
+  const data = parsed.data;
   const total = Math.max(1, Math.ceil(data.length / targetCharsPerChunk));
   const chunks = [];
   for (let index = 0; index < total; index += 1) {
     const slice = data.slice(index * targetCharsPerChunk, (index + 1) * targetCharsPerChunk);
-    chunks.push(encodeQrChunk({ sessionId, index, total, compressed, data: slice }));
+    chunks.push(encodeQrChunk({ sessionId, index, total, compressed: parsed.compressed, data: slice }));
   }
   return chunks;
 }
@@ -150,12 +172,6 @@ export function assembleQrChunks(chunkMap, total, compressed) {
     parts.push(chunkMap.get(index));
   }
   return `${LOCAL_TRANSFER_SIGNAL_PREFIX}.${compressed}.${parts.join('')}`;
-}
-
-export function extractLocalSignal(input) {
-  const value = String(input || '').trim();
-  const route = value.match(/#localtransfer\/(?:join|answer)\/([^\s]+)/);
-  return route ? route[1] : value;
 }
 
 export const buildJoinUrl = code => `${window.location.origin}${window.location.pathname}${window.location.search}#localtransfer/join/${code}`;

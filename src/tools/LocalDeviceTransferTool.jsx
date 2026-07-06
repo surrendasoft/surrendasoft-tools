@@ -287,7 +287,7 @@ export default function LocalDeviceTransferTool() {
       </div>
       <SignalScanner onSignal={createReceiver} scanLabel="Open camera to scan" idleHint="Point this camera at the cycling QR on the sender’s screen" videoLabel="Pairing QR scanner camera" uploadHint="Upload QR photo"/>
       <details className="ldt-manual"><summary>Paste a connection code instead</summary>
-        <PasteCodePanel label="Sender’s connection code" value={manualOffer} onChange={setManualOffer} onSubmit={() => createReceiver(manualOffer)} submitLabel="Continue to return step" placeholder="Paste the sender’s connection code or pairing link" hint="Use this if scanning is awkward. You’ll get a return code to send back."/>
+        <PasteCodePanel label="Sender’s connection code" value={manualOffer} onChange={setManualOffer} onSubmit={() => createReceiver(manualOffer)} submitLabel="Continue to return step" placeholder="Paste the sender’s connection code" hint="Paste the full sslt1… code or use the camera scanner. Pairing links often fail on mobile — prefer the raw connection code or QR scan."/>
       </details>
     </section>}
 
@@ -297,11 +297,14 @@ export default function LocalDeviceTransferTool() {
       <VerifyBadge code={verifyCode}/>
       <div className="ldt-step-head"><span>1</span><div><strong>Show this QR to the receiving device</strong><small>On the phone or tablet, open this tool and tap “Open camera to scan”. The codes cycle automatically — hold steady until all parts are captured.</small></div></div>
       <AnimatedQrDisplay value={offerCode} peer={peerRef.current} roleLabel="Sender QR"/>
-      <div className="ldt-pair-actions"><button className="button secondary" onClick={() => copy(offerLink, 'offer')}><Icon name={copied === 'offer' ? 'check' : 'copy'} size={17}/>{copied === 'offer' ? 'Copied link' : 'Copy pairing link'}</button></div>
+      <div className="ldt-pair-actions">
+        <button className="button secondary" onClick={() => copy(offerCode, 'offer-code')}><Icon name={copied === 'offer-code' ? 'check' : 'copy'} size={17}/>{copied === 'offer-code' ? 'Copied code' : 'Copy connection code'}</button>
+        <button className="button secondary" onClick={() => copy(offerLink, 'offer-link')}><Icon name={copied === 'offer-link' ? 'check' : 'copy'} size={17}/>{copied === 'offer-link' ? 'Copied link' : 'Copy pairing link'}</button>
+      </div>
       <div className="ldt-waiting-pill" role="status"><ToolGlyph name="refresh" size={14}/> Waiting for the receiver to scan…</div>
 
       <div className="ldt-step-head second recommended"><span>2</span><div><strong>Paste the return code from the receiver</strong><small>Fastest on laptops — copy the return code on the phone, then paste it here. Check the verification code matches before completing.</small></div></div>
-      <PasteCodePanel label="Return connection code" value={manualAnswer} onChange={setManualAnswer} onSubmit={() => applyAnswer(manualAnswer)} submitLabel="Complete connection" placeholder="Paste the return code from the receiving device"/>
+      <PasteCodePanel label="Return connection code" value={manualAnswer} onChange={setManualAnswer} onSubmit={() => applyAnswer(manualAnswer)} submitLabel="Complete connection" placeholder="Paste the return code from the receiving device" hint="Paste the entire code in one go — no line breaks. If scanning QR instead, wait until every progress dot is filled."/>
       <details className="ldt-manual alt"><summary>Or scan the return QR with this device’s camera</summary>
         <p className="ldt-alt-note">Works best when this device has a good rear camera. Laptop webcams often struggle — paste is more reliable.</p>
         <SignalScanner onSignal={applyAnswer} scanLabel="Scan return QR" idleHint="Point this camera at the return QR on the receiver" videoLabel="Return QR scanner camera" uploadHint="Upload return QR photo"/>
@@ -431,8 +434,12 @@ export function SignalScanner({
     state.map.set(parsed.index, parsed.data);
     setProgress({ total: state.total, captured: new Set(state.map.keys()), current: parsed.index });
     if (state.map.size >= state.total) {
-      try { finish(assembleQrChunks(state.map, state.total, state.compressed)); }
-      catch { /* a duplicate/late frame raced the completion check — keep scanning */ }
+      try {
+        finish(assembleQrChunks(state.map, state.total, state.compressed));
+      } catch (assemblyError) {
+        setError(assemblyError.message || 'Some QR parts are still missing. Keep scanning until every dot is filled.');
+        resetScan();
+      }
     }
     return true;
   };
