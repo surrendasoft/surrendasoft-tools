@@ -14,6 +14,8 @@ export const QR_MAX_CANVAS_PX = 900;
 // Animated/chunked pairing QRs always carry a short payload — keep them a comfortable
 // on-screen size on phones and laptops instead of growing with dynamic sizing.
 export const QR_CHUNK_DISPLAY_PX = 280;
+// Single full-signal QR on mobile — large enough for phone-to-phone scanning.
+export const QR_MOBILE_SINGLE_PX = 380;
 const QR_MARGIN_MODULES = 2;
 
 export function computeQrCanvasSize(text, errorCorrectionLevel) {

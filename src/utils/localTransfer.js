@@ -6,6 +6,16 @@ export const LOCAL_TRANSFER_FILE_LIMIT = 100 * 1024 * 1024;
 export const LOCAL_TRANSFER_TEXT_LIMIT = 100000;
 export const LOCAL_TRANSFER_CHUNK_SIZE = 32 * 1024;
 export const LOCAL_TRANSFER_QR_CHUNK_CHARS = 90;
+// Above this size we fall back to chunked QRs on mobile (rare).
+export const LOCAL_TRANSFER_SINGLE_QR_MAX_CHARS = 1200;
+
+export function isMobilePairingDevice() {
+  if (typeof window === 'undefined') return false;
+  const coarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+  const narrow = window.innerWidth <= 768;
+  const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  return narrow && (coarse || mobileUa);
+}
 
 export const createTransferId = () => {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();

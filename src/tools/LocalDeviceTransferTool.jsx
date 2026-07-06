@@ -6,11 +6,11 @@ import ToolGlyph from '../components/ToolGlyph.jsx';
 import { formatBytes } from '../utils/format.js';
 import {
   assembleQrChunks, buildJoinUrl, connectionCode, createTransferId, decodeLocalSignal, decodeQrChunk,
-  encodeLocalSignal, extractLocalSignal, LOCAL_TRANSFER_CHUNK_SIZE, LOCAL_TRANSFER_FILE_LIMIT,
-  LOCAL_TRANSFER_SIGNAL_PREFIX, LOCAL_TRANSFER_TEXT_LIMIT, safeFileName, sha256Hex, splitIntoQrChunks,
-  waitForIceGathering,
+  encodeLocalSignal, extractLocalSignal, isMobilePairingDevice, LOCAL_TRANSFER_CHUNK_SIZE, LOCAL_TRANSFER_FILE_LIMIT,
+  LOCAL_TRANSFER_SIGNAL_PREFIX, LOCAL_TRANSFER_SINGLE_QR_MAX_CHARS, LOCAL_TRANSFER_TEXT_LIMIT, safeFileName, sha256Hex,
+  splitIntoQrChunks, waitForIceGathering,
 } from '../utils/localTransfer.js';
-import { QR_CHUNK_DISPLAY_PX } from '../utils/qrSizing.js';
+import { computeQrCanvasSize, QR_CHUNK_DISPLAY_PX, QR_MOBILE_SINGLE_PX } from '../utils/qrSizing.js';
 import './LocalDeviceTransferTool.css';
 import './LocalDeviceTransferFallback.css';
 
@@ -32,9 +32,17 @@ function StepProgress({ step, total = 2 }) {
   </div>;
 }
 
-function VerifyBadge({ code }) {
+function VerifyBadge({ code, connected = false }) {
   if (!code) return null;
-  return <div className="ldt-verify" role="status"><ToolGlyph name="shieldAlert" size={16}/><span>Check both screens show <b>{code}</b> — this confirms the same pairing session. It is <em>not</em> the code to paste.</span></div>;
+  return <div className={`ldt-verify${connected ? ' connected' : ''}`} role="status">
+    <ToolGlyph name={connected ? 'check' : 'shieldAlert'} size={16}/>
+    <span>
+      {connected
+        ? <>Session <b>{code}</b> · connected</>
+        : <>Both screens show <b>{code}</b> — same session, <em>not connected yet</em>. {` `}
+          This number is only a check. Finish the steps below to connect.</>}
+    </span>
+  </div>;
 }
 
 function PasteCodePanel({ label, value, onChange, onSubmit, submitLabel, placeholder, hint }) {
@@ -43,6 +51,23 @@ function PasteCodePanel({ label, value, onChange, onSubmit, submitLabel, placeho
     <label className="ldt-paste-label">{label}</label>
     <textarea aria-label={label} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} rows={4}/>
     <button className="button primary" onClick={onSubmit} disabled={!value.trim()}>{submitLabel}</button>
+  </div>;
+}
+
+function ShareCodeActions({ value, copyKey, shareKey, copied, onCopy, onShare, copyLabel = 'Copy code', shareLabel = 'Share code' }) {
+  const canShare = typeof navigator !== 'undefined' && Boolean(navigator.share);
+  return <div className="ldt-share-actions">
+    <button className="button primary" onClick={() => onCopy(value, copyKey)}><Icon name={copied === copyKey ? 'check' : 'copy'} size={17}/>{copied === copyKey ? 'Copied' : copyLabel}</button>
+    {canShare && <button className="button secondary" onClick={() => onShare(value, shareKey)}><ToolGlyph name="arrowRight" size={17}/>{copied === shareKey ? 'Shared' : shareLabel}</button>}
+  </div>;
+}
+
+function ConnectionCodeBlock({ label, value, hint, copied, copyKey, shareKey, onCopy, onShare, copyLabel, shareLabel }) {
+  return <div className="ldt-code-block">
+    {hint && <p className="ldt-paste-hint">{hint}</p>}
+    <label className="ldt-paste-label">{label}</label>
+    <textarea className="ldt-signal-code" aria-label={label} readOnly value={value} rows={5} onFocus={event => event.target.select()}/>
+    <ShareCodeActions value={value} copyKey={copyKey} shareKey={shareKey} copied={copied} onCopy={onCopy} onShare={onShare} copyLabel={copyLabel} shareLabel={shareLabel}/>
   </div>;
 }
 
@@ -123,7 +148,7 @@ export default function LocalDeviceTransferTool() {
       setOfferCode(encoded);
       setOfferLink(buildJoinUrl(encoded));
       setVerifyCode(connectionCode(signal));
-      setPhase('offer'); setStatus('Show this QR on the other device, then paste their return code');
+      setPhase('offer'); setStatus(isMobilePairingDevice() ? 'Let the other device scan or share this code' : 'Share this code with the other device, then paste their reply');
     } catch (createError) { setFailure(createError.message || 'The connection QR could not be created.'); }
   }
 
@@ -261,6 +286,15 @@ export default function LocalDeviceTransferTool() {
       setCopied(key); window.setTimeout(() => setCopied(''), 1400);
     } catch { setError('Clipboard access is blocked here. Select and copy the connection code shown below.'); }
   };
+  const shareCode = async (value, key) => {
+    try {
+      if (!navigator.share) { await copy(value, key); return; }
+      await navigator.share({ title: 'Device connection code', text: value });
+      setCopied(key); window.setTimeout(() => setCopied(''), 1400);
+    } catch (shareError) {
+      if (shareError?.name !== 'AbortError') setError('Sharing was blocked — use Copy instead.');
+    }
+  };
   const closeConnection = (reset = true) => {
     channelRef.current?.close(); peerRef.current?.close();
     channelRef.current = null; peerRef.current = null; sessionRef.current = ''; pendingFilesRef.current.clear(); receivingRef.current = null;
@@ -279,6 +313,7 @@ export default function LocalDeviceTransferTool() {
 
   const progress = transfer?.total ? Math.min(100, Math.round((transfer.done / transfer.total) * 100)) : 0;
   const pairingStep = phase === 'offer' ? 1 : phase === 'return' || phase === 'joining' ? 2 : 0;
+  const isMobile = isMobilePairingDevice();
   return <div className="ldt-root">
     <div className="ldt-local"><ToolGlyph name="swap" size={22}/><div><strong>Direct browser-to-browser transfer</strong><span>No account, cloud file storage, or transfer-content upload.</span></div></div>
     <div className="ldt-status" data-phase={phase}><span className="ldt-status-dot"/><div><strong>{status}</strong>{verifyCode && pairingStep === 0 && <small>Pairing verification code: <b>{verifyCode}</b></small>}</div></div>
@@ -286,54 +321,57 @@ export default function LocalDeviceTransferTool() {
     {pairingStep > 0 && <StepProgress step={pairingStep}/>}
 
     {phase === 'idle' && <section className="ldt-start">
-      <div className="ldt-intro"><ToolGlyph name="swap" size={38}/><h2>Connect two devices</h2><p>Pair over QR codes on the same Wi‑Fi. Either device can send files once connected.</p></div>
+      <div className="ldt-intro"><ToolGlyph name="swap" size={38}/><h2>Connect two devices</h2><p>{isMobile ? 'Pair on the same Wi‑Fi using one QR code, or copy and share codes between phones.' : 'Pair on the same Wi‑Fi by copying and sharing connection codes — no QR scanning on desktop.'}</p></div>
       <ol className="ldt-how">
-        <li><strong>This device</strong> shows a connection QR, or <strong>the other device</strong> scans it.</li>
-        <li>The scanning device copies a return code back.</li>
-        <li>Paste the return code here to finish — both devices can then transfer.</li>
+        {isMobile ? <>
+          <li><strong>This phone</strong> shows one QR, or <strong>the other phone</strong> scans it.</li>
+          <li>Copy or share the return code back.</li>
+          <li>Paste the return code to finish — then either phone can transfer files.</li>
+        </> : <>
+          <li><strong>Start a connection</strong> here and copy or share the code.</li>
+          <li>Paste that code on the other device, then copy its return code back.</li>
+          <li>Paste the return code here to finish.</li>
+        </>}
       </ol>
       <div className="ldt-start-actions">
-        <button className="button primary ldt-show-qr" onClick={createHost}><ToolGlyph name="monitor" size={20}/> Show connection QR</button>
-        <p className="ldt-start-divider"><span>on the other device</span></p>
+        <button className="button primary ldt-show-qr" onClick={createHost}><ToolGlyph name={isMobile ? 'camera' : 'monitor'} size={20}/> {isMobile ? 'Show QR code' : 'Start connection'}</button>
+        {isMobile && <p className="ldt-start-divider"><span>or scan their code</span></p>}
       </div>
-      <SignalScanner onSignal={createReceiver} scanLabel="Open camera to scan" idleHint="Point at the connection QR on the other screen" videoLabel="Pairing QR scanner camera" uploadHint="Upload QR photo"/>
-      <details className="ldt-manual"><summary>Paste a connection code instead</summary>
-        <PasteCodePanel label="First connection code" value={manualOffer} onChange={setManualOffer} onSubmit={() => createReceiver(manualOffer)} submitLabel="Continue to return step" placeholder="Paste the sslt1… code from the other device" hint="Paste the full sslt1… code or use the camera scanner. Pairing links often fail on mobile — prefer the raw code or QR scan."/>
-      </details>
+      {isMobile && <SignalScanner onSignal={createReceiver} scanLabel="Open camera to scan" idleHint="Point at the single QR on the other phone" videoLabel="Pairing QR scanner camera" uploadHint="Upload QR photo"/>}
+      {isMobile ? <details className="ldt-manual"><summary>Paste a connection code instead</summary>
+        <PasteCodePanel label="First connection code" value={manualOffer} onChange={setManualOffer} onSubmit={() => createReceiver(manualOffer)} submitLabel="Continue to return step" placeholder="Paste the sslt1… code from the other device" hint="Paste the full sslt1… code if scanning is awkward."/>
+      </details> : <PasteCodePanel label="Paste a connection code from the other device" value={manualOffer} onChange={setManualOffer} onSubmit={() => createReceiver(manualOffer)} submitLabel="Use this code" placeholder="Paste the sslt1… code from the other device" hint="Use this if the other device already started a connection and shared its code with you."/>}
     </section>}
 
     {phase === 'creating' && <section className="ldt-wait" role="status"><ToolGlyph name="refresh" size={28}/><strong>Gathering local connection details…</strong><span>This can take a few seconds. Keep this page open.</span></section>}
 
     {phase === 'offer' && <section className="ldt-pairing">
       <VerifyBadge code={verifyCode}/>
-      <div className="ldt-step-head"><span>1</span><div><strong>Show this to the other device</strong><small>They open this tool and tap “Open camera to scan”. Tap a part number below to jump — e.g. part 10 if they missed it.</small></div></div>
-      <QrChunkPager value={offerCode} peer={peerRef.current} roleLabel="First connection QR"/>
-      <div className="ldt-pair-actions">
-        <button className="button secondary" onClick={() => copy(offerCode, 'offer-code')}><Icon name={copied === 'offer-code' ? 'check' : 'copy'} size={17}/>{copied === 'offer-code' ? 'Copied code' : 'Copy connection code'}</button>
-        <button className="button secondary" onClick={() => copy(offerLink, 'offer-link')}><Icon name={copied === 'offer-link' ? 'check' : 'copy'} size={17}/>{copied === 'offer-link' ? 'Copied link' : 'Copy pairing link'}</button>
-      </div>
+      <div className="ldt-step-head"><span>1</span><div><strong>{isMobile ? 'Let the other phone scan or receive this' : 'Send this code to the other device'}</strong><small>{isMobile ? 'One QR code — hold steady while they scan. Or tap Share / Copy and send it another way.' : 'Copy or share the connection code below. QR scanning is not used on desktop.'}</small></div></div>
+      {isMobile
+        ? <>
+          <SingleConnectionQr value={offerCode} peer={peerRef.current} roleLabel="First connection QR"/>
+          <ShareCodeActions value={offerCode} copyKey="offer-code" shareKey="offer-share" copied={copied} onCopy={copy} onShare={shareCode} copyLabel="Copy connection code" shareLabel="Share connection code"/>
+        </>
+        : <ConnectionCodeBlock label="Connection code" value={offerCode} hint="Copy or share this entire sslt1… string with the other device." copied={copied} copyKey="offer-code" shareKey="offer-share" onCopy={copy} onShare={shareCode} copyLabel="Copy connection code" shareLabel="Share connection code"/>}
 
-      <div className="ldt-step-head second recommended"><span>2</span><div><strong>Paste what they send back</strong><small>On the other device, tap “Copy return code”, then paste the full sslt1… string here — not the 6-digit verification number.</small></div></div>
+      <div className="ldt-step-head second recommended"><span>2</span><div><strong>Paste what they send back</strong><small>On the other device, tap “Copy return code” or Share, then paste the long sslt1… string here. The 6-digit session number is not the return code.</small></div></div>
       <PasteCodePanel label="Return connection code" value={manualAnswer} onChange={setManualAnswer} onSubmit={() => applyAnswer(manualAnswer)} submitLabel="Complete connection" placeholder="Paste the long sslt1… code (not the 6-digit verification number)" hint="Paste the entire return code in one go with no line breaks."/>
-      <details className="ldt-manual alt"><summary>Or scan their return QR with this camera</summary>
-        <p className="ldt-alt-note">Works best with a good rear camera. Paste is usually more reliable on laptops.</p>
-        <SignalScanner onSignal={applyAnswer} scanLabel="Scan return QR" idleHint="Point at the return QR on the other device" videoLabel="Return QR scanner camera" uploadHint="Upload return QR photo"/>
-      </details>
     </section>}
 
     {(phase === 'joining' || phase === 'manual') && <section className="ldt-wait" role="status"><ToolGlyph name="refresh" size={28}/><strong>{phase === 'joining' ? 'Creating the return handshake…' : 'The connection code needs attention'}</strong><span>{phase === 'joining' ? 'Keep this page open while the browser gathers local connection details.' : 'Return to the start and paste a valid connection code.'}</span>{phase === 'manual' && <button className="button secondary" onClick={() => closeConnection()}>Start again</button>}</section>}
 
     {phase === 'return' && <section className="ldt-pairing">
+      <div className="ldt-not-connected" role="status"><ToolGlyph name="arrowRight" size={18}/><p><strong>Almost there — not connected yet.</strong> Copy or share the return code below and paste it on the other device.</p></div>
       <VerifyBadge code={verifyCode}/>
-      <div className="ldt-step-head"><span>2</span><div><strong>Send this to the other device</strong><small>Tap “Copy return code”, switch to the other device, and paste it there. If they’re still scanning, tap a part number below to show the one they need.</small></div></div>
-      <div className="ldt-copy-primary"><button className="button primary" onClick={() => copy(answerCode, 'answer')}><Icon name={copied === 'answer' ? 'check' : 'copy'} size={18}/>{copied === 'answer' ? 'Return code copied — paste on other device' : 'Copy return code'}</button></div>
-      <QrChunkPager value={answerCode} peer={peerRef.current} roleLabel="Return connection QR"/>
-      <details className="ldt-manual"><summary>Show raw return code</summary><textarea className="ldt-signal-code" aria-label="Return connection code" readOnly value={answerCode}/></details>
+      <div className="ldt-step-head"><span>2</span><div><strong>Send this to the other device</strong><small>Tap Copy or Share below, switch to the other device, and paste the code there.</small></div></div>
+      <ConnectionCodeBlock label="Return connection code" value={answerCode} hint="This is the code to paste on the other device — not the 6-digit session number." copied={copied} copyKey="answer" shareKey="answer-share" onCopy={copy} onShare={shareCode} copyLabel="Copy return code" shareLabel="Share return code"/>
       <div className="ldt-one-qr success"><ToolGlyph name="shieldAlert" size={18}/><p><strong>Connection data only — not your files.</strong> Once the other device pastes this code, transfers use an encrypted WebRTC channel between the two browsers.</p></div>
     </section>}
 
     {phase === 'connected' && <section className="ldt-connected">
-      <div className="ldt-connected-head"><div><ToolGlyph name="check" size={22}/><span><strong>Connected</strong><small>Verification code {verifyCode} · Keep both pages open</small></span></div><button onClick={() => closeConnection()}>Disconnect</button></div>
+      <div className="ldt-connected-head"><div><ToolGlyph name="check" size={22}/><span><strong>Connected</strong><small>Session {verifyCode} · Keep both pages open</small></span></div><button onClick={() => closeConnection()}>Disconnect</button></div>
+      <VerifyBadge code={verifyCode} connected/>
       <div className="ldt-transfer-grid">
         <article className="ldt-panel"><div className="ldt-panel-title"><ToolGlyph name="text" size={20}/><div><strong>Send text</strong><small>Notes, links, addresses, or longer text.</small></div></div><textarea aria-label="Text to send to connected device" value={text} onChange={event => setText(event.target.value)} maxLength={LOCAL_TRANSFER_TEXT_LIMIT} rows="6" placeholder="Type or paste text…"/><div className="ldt-count">{text.length.toLocaleString()} / {LOCAL_TRANSFER_TEXT_LIMIT.toLocaleString()}</div><button className="button primary" onClick={sendText} disabled={!text.trim()}><ToolGlyph name="arrowRight" size={17}/> Send text</button></article>
         <article className="ldt-panel"><div className="ldt-panel-title"><ToolGlyph name="fileText" size={20}/><div><strong>Send a file</strong><small>The other device must approve it first.</small></div></div><label className="ldt-file"><input type="file" aria-label="Choose file to send" onChange={event => setSelectedFile(event.target.files?.[0] || null)}/><ToolGlyph name="folder" size={30}/><strong>{selectedFile?.name || 'Choose a file'}</strong><span>{selectedFile ? formatBytes(selectedFile.size) : `Up to ${formatBytes(LOCAL_TRANSFER_FILE_LIMIT)}`}</span></label><button className="button primary" onClick={offerFile} disabled={!selectedFile}><ToolGlyph name="arrowRight" size={17}/> Ask to send file</button></article>
@@ -351,6 +389,44 @@ export default function LocalDeviceTransferTool() {
 const QR_CYCLE_INTERVAL_MS = 1800;
 const AUTO_CYCLE_RESUME_MS = 8000;
 const SWIPE_THRESHOLD_PX = 40;
+
+export function SingleConnectionQr({ value, peer, roleLabel = 'Connection QR' }) {
+  const canvasRef = useRef(null);
+  const [stopped, setStopped] = useState(false);
+  const [error, setError] = useState('');
+  const useChunkFallback = Boolean(value && value.length > LOCAL_TRANSFER_SINGLE_QR_MAX_CHARS);
+
+  useEffect(() => {
+    if (useChunkFallback || !value || !canvasRef.current) return;
+    setStopped(false); setError('');
+    const width = Math.min(QR_MOBILE_SINGLE_PX, Math.max(320, computeQrCanvasSize(value, 'M')));
+    QRCode.toCanvas(canvasRef.current, value, { width, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#10183e', light: '#ffffff' } }, qrError => {
+      setError(qrError ? 'This connection QR could not be drawn — use Copy or Share instead.' : '');
+    });
+  }, [value, useChunkFallback]);
+
+  useEffect(() => {
+    if (!peer) return undefined;
+    const checkConnected = () => { if (peer.connectionState === 'connected') setStopped(true); };
+    checkConnected();
+    peer.addEventListener?.('connectionstatechange', checkConnected);
+    return () => peer.removeEventListener?.('connectionstatechange', checkConnected);
+  }, [peer]);
+
+  if (useChunkFallback) return <QrChunkPager value={value} peer={peer} roleLabel={roleLabel} showAutoCycle={false}/>;
+
+  return <div className="ldt-qr-display single">
+    <div className="ldt-qr-frame" aria-label={roleLabel}>
+      {error ? <p className="ldt-error">{error}</p> : <>
+        <canvas ref={canvasRef}/>
+        <span className="ldt-qr-corner tl" aria-hidden="true"/><span className="ldt-qr-corner tr" aria-hidden="true"/>
+        <span className="ldt-qr-corner bl" aria-hidden="true"/><span className="ldt-qr-corner br" aria-hidden="true"/>
+      </>}
+    </div>
+    {!error && !stopped && <p className="ldt-qr-caption">One QR — hold the other phone steady on this code</p>}
+    {!error && stopped && <p className="ldt-qr-caption success"><ToolGlyph name="check" size={13}/> Connected — you can stop showing this QR</p>}
+  </div>;
+}
 
 export function QrChunkPager({ value, peer, roleLabel = 'Connection QR', showAutoCycle = true }) {
   const canvasRef = useRef(null);
@@ -588,7 +664,7 @@ export function SignalScanner({
   const missingParts = progress ? Array.from({ length: progress.total }, (_, part) => part).filter(part => !progress.captured.has(part)) : [];
   const hint = progress && progress.total > 1
     ? (quality === 'green' ? `Reading part ${(progress.current ?? 0) + 1}…` : quality === 'orange' ? 'Hold steady on the QR…' : missingParts.length ? `Still need part${missingParts.length === 1 ? '' : 's'} ${missingParts.map(part => part + 1).join(', ')}` : 'Keep scanning')
-    : (quality === 'green' ? 'Reading…' : quality === 'orange' ? 'Hold steady…' : 'Point at the connection QR on the other screen');
+    : (quality === 'green' ? 'Reading…' : quality === 'orange' ? 'Hold steady…' : 'Point at the QR on the other phone');
 
   return <div className="ldt-scanner">
     <div className={`ldt-viewfinder${active ? ' active' : ''}`}>
@@ -613,6 +689,7 @@ export function SignalScanner({
       {missingParts.length > 0 && <p className="ldt-chunk-missing">
         Still need part{missingParts.length === 1 ? '' : 's'}: <strong>{missingParts.map(part => part + 1).join(', ')}</strong>.
         Ask the other device to tap part {missingParts[missingParts.length - 1] + 1} on their screen.
+        The 6-digit session number on their screen does <em>not</em> count as scanning a part.
       </p>}
     </div>}
     <div className="ldt-scanner-actions">{active ? <button className="button secondary" onClick={stop}>Stop camera</button> : <button className="button primary" onClick={start}><ToolGlyph name="camera" size={17}/> {scanLabel}</button>}<label className="button secondary"><ToolGlyph name="image" size={17}/> {uploadHint}<input type="file" accept="image/*" onChange={upload}/></label></div>
