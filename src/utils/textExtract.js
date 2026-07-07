@@ -3,6 +3,8 @@
 // layer. Everything runs client-side; OCR downloads its recognition engine
 // and language data from a public CDN the first time it runs.
 
+import { loadPdfJs } from './pdfjs.js';
+
 export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|bmp|gif)$/i;
@@ -21,6 +23,22 @@ export function detectFileKind(file) {
   if ((type.startsWith('image/') && type !== 'image/svg+xml') || IMAGE_EXTENSIONS.test(name)) return 'image';
   if (type.startsWith('text/') || type === 'application/json' || TEXT_EXTENSIONS.test(name)) return 'text';
   return 'unsupported';
+}
+
+export function createImageThumbnailUrl(file) {
+  return URL.createObjectURL(file);
+}
+
+export async function createPdfThumbnailUrl(arrayBuffer, scale = 0.35) {
+  const pdfjs = await loadPdfJs();
+  const document = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+  const page = await document.getPage(1);
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(viewport.width));
+  canvas.height = Math.max(1, Math.round(viewport.height));
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return canvas.toDataURL('image/jpeg', 0.85);
 }
 
 export async function extractPlainText(file) {
@@ -53,12 +71,7 @@ async function renderPageToBlob(page, scale = 2) {
 // layer are read directly; pages with little/no text (scanned or image-only)
 // are rendered to a canvas and OCR'd when `ocrWorker` is supplied.
 export async function extractPdfText(arrayBuffer, { ocrWorker, onProgress } = {}) {
-  const pdfjs = await import('pdfjs-dist');
-  const isTestEnv = typeof process !== 'undefined' && !!process.env.VITEST;
-  pdfjs.GlobalWorkerOptions.workerSrc = isTestEnv
-    ? 'pdfjs-dist/build/pdf.worker.min.mjs'
-    : (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
-
+  const pdfjs = await loadPdfJs();
   const document = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
   const pages = [];
 

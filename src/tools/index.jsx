@@ -62,8 +62,10 @@ const SimpleInvoicePdfTool = lazy(() => import('./SimpleInvoicePdfTool.jsx'));
 const SimpleQuotePdfTool = lazy(() => import('./SimpleQuotePdfTool.jsx'));
 const SimpleReceiptPdfTool = lazy(() => import('./SimpleReceiptPdfTool.jsx'));
 const PdfPageTool = lazy(() => import('./PdfPageTool.jsx'));
+const PdfFormTool = lazy(() => import('./PdfFormTool.jsx'));
 const QuickChecklistShareTool = lazy(() => import('./QuickChecklistShareTool.jsx'));
 const TextExtractorTool = lazy(() => import('./TextExtractorTool.jsx'));
+const VideoTrimTool = lazy(() => import('./VideoTrimTool.jsx'));
 
 export const toolComponents = {
   emoji: EmojiTool,
@@ -128,6 +130,8 @@ export const toolComponents = {
   quotepdf: SimpleQuotePdfTool,
   receiptpdf: SimpleReceiptPdfTool,
   pdfpages: PdfPageTool,
+  pdfform: PdfFormTool,
   checklist: QuickChecklistShareTool,
   textextract: TextExtractorTool,
+  videotrim: VideoTrimTool,
 };

@@ -1,0 +1,159 @@
+.vtrim-root { display: grid; gap: 18px; }
+
+.vtrim-editor {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #e0e5ec;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+  padding: 16px;
+}
+
+.vtrim-player-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #10162f;
+  border: 1px solid #dce3ec;
+}
+.vtrim-player {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  background: #000;
+}
+
+.vtrim-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.vtrim-meta strong { font: 700 13px 'Manrope'; color: #17203e; }
+.vtrim-meta span { font-size: 11px; color: #748096; font-weight: 600; }
+
+.vtrim-timeline {
+  display: grid;
+  gap: 8px;
+}
+.vtrim-track {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: #e8edf5;
+  overflow: hidden;
+}
+.vtrim-track-keep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #1670d5, #0c9b7a);
+  border-radius: 999px;
+}
+.vtrim-track-cut {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    #ffd9d9,
+    #ffd9d9 4px,
+    #ffb8b8 4px,
+    #ffb8b8 8px
+  );
+  opacity: 0.95;
+}
+.vtrim-track-playhead {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: #10183e;
+  box-shadow: 0 0 0 1px #fff;
+  pointer-events: none;
+}
+
+.vtrim-sliders { display: grid; gap: 12px; }
+.vtrim-slider-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.vtrim-slider-row label {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font: 700 11px 'Manrope';
+  color: #38445e;
+}
+.vtrim-slider-row label span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vtrim-slider-row input[type='range'] {
+  width: 100%;
+  accent-color: #1766c8;
+}
+.vtrim-set-btn {
+  border: 1px solid #dce3ec;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  font: 700 10px 'Manrope';
+  padding: 8px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.vtrim-set-btn:hover { background: #f4f8ff; border-color: #8ba9d1; color: #2b5faa; }
+
+.vtrim-middle-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 12px 'Manrope';
+  color: #38445e;
+  cursor: pointer;
+}
+.vtrim-middle-toggle input { accent-color: #1766c8; width: 16px; height: 16px; }
+
+.vtrim-summary {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f4f8ff;
+  border: 1px solid #d6e1f0;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.vtrim-summary strong { color: #17203e; }
+
+.vtrim-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.vtrim-progress {
+  flex: 1;
+  min-width: 160px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e4e9f1;
+  overflow: hidden;
+}
+.vtrim-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #1670d5, #0c9b7a);
+  transition: width .2s;
+}
+
+@media (max-width: 620px) {
+  .vtrim-slider-row { grid-template-columns: 1fr; }
+  .vtrim-set-btn { width: 100%; }
+  .vtrim-actions .button { flex: 1; min-width: 140px; }
+}

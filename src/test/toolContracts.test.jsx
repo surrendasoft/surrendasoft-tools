@@ -66,8 +66,10 @@ const workspaceSelectors = {
   quotepdf: '.sip-root',
   receiptpdf: '.sip-root',
   pdfpages: '.ppt-root',
+  pdfform: '.pdfform-root',
   checklist: '.qcs-root',
   textextract: '.txtx-root',
+  videotrim: '.vtrim-root',
 };
 
 afterEach(() => {

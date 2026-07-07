@@ -14,17 +14,19 @@ vi.mock('tesseract.js', () => ({
   })),
 }));
 
-vi.mock('pdfjs-dist', () => ({
-  GlobalWorkerOptions: {},
-  getDocument: vi.fn(() => ({
-    promise: Promise.resolve({
-      numPages: 2,
-      getPage: number => Promise.resolve({
-        getTextContent: () => Promise.resolve({ items: number === 1 ? [{ str: 'Real text layer content' }] : [] }),
-        getViewport: () => ({ width: 20, height: 20 }),
-        render: () => ({ promise: Promise.resolve() }),
+vi.mock('../utils/pdfjs.js', () => ({
+  loadPdfJs: vi.fn(async () => ({
+    GlobalWorkerOptions: {},
+    getDocument: vi.fn(() => ({
+      promise: Promise.resolve({
+        numPages: 2,
+        getPage: number => Promise.resolve({
+          getTextContent: () => Promise.resolve({ items: number === 1 ? [{ str: 'Real text layer content' }] : [] }),
+          getViewport: () => ({ width: 20, height: 20 }),
+          render: () => ({ promise: Promise.resolve() }),
+        }),
       }),
-    }),
+    })),
   })),
 }));
 
@@ -54,16 +56,14 @@ describe('TextExtractorTool', () => {
     expect(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/)).toBeInTheDocument();
   });
 
-  it('extracts and displays text from a plain text file', async () => {
+  it('extracts and displays text from a plain text file without extra clicks', async () => {
     const user = userEvent.setup();
     render(<TextExtractorTool />);
     const file = makeFile('notes.txt', 'text/plain', 'Hello from a text file');
 
     await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), file);
 
-    expect(await screen.findByText('Done')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'View text' }));
-    expect(screen.getByRole('textbox')).toHaveValue('Hello from a text file');
+    expect(await screen.findByDisplayValue('Hello from a text file')).toBeInTheDocument();
   });
 
   it('extracts text from a Word document', async () => {
@@ -73,9 +73,7 @@ describe('TextExtractorTool', () => {
 
     await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), file);
 
-    expect(await screen.findByText('Done')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'View text' }));
-    expect(screen.getByRole('textbox').value).toContain('Extracted from a docx');
+    expect(await screen.findByDisplayValue(/Extracted from a docx/)).toBeInTheDocument();
   });
 
   it('runs OCR on an image file and displays the recognised text', async () => {
@@ -85,9 +83,7 @@ describe('TextExtractorTool', () => {
 
     await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), file);
 
-    expect(await screen.findByText('Done')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'View text' }));
-    expect(screen.getByRole('textbox')).toHaveValue('OCR extracted text');
+    expect(await screen.findByDisplayValue('OCR extracted text')).toBeInTheDocument();
   });
 
   it('reads a PDF text layer directly and falls back to OCR for pages without one', async () => {
@@ -97,9 +93,7 @@ describe('TextExtractorTool', () => {
 
     await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), file);
 
-    expect(await screen.findByText('Done')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'View text' }));
-    const combined = screen.getByRole('textbox').value;
+    const combined = (await screen.findByDisplayValue(/Real text layer content/)).value;
     expect(combined).toContain('Real text layer content');
     expect(combined).toContain('OCR extracted text');
     expect(combined).toContain('--- Page 1 ---');
@@ -113,8 +107,7 @@ describe('TextExtractorTool', () => {
 
     await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), file);
 
-    expect(await screen.findByText('Failed')).toBeInTheDocument();
-    expect(screen.getByText(/isn't supported/)).toBeInTheDocument();
+    expect(await screen.findByText(/isn't supported/)).toBeInTheDocument();
   });
 
   it('offers copy and download actions once a file is done', async () => {
@@ -124,7 +117,7 @@ describe('TextExtractorTool', () => {
 
     await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), file);
 
-    expect(await screen.findByText('Done')).toBeInTheDocument();
+    await screen.findByDisplayValue('Copy me');
     expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download .txt' })).toBeInTheDocument();
   });
@@ -137,9 +130,22 @@ describe('TextExtractorTool', () => {
 
     await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), [fileA, fileB]);
 
-    await waitFor(() => expect(screen.getAllByText('Done')).toHaveLength(2));
+    await waitFor(() => expect(screen.getByDisplayValue('Second file')).toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Copy all text' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download combined .txt' })).toBeInTheDocument();
+  });
+
+  it('switches extracted text when selecting another finished file', async () => {
+    const user = userEvent.setup();
+    render(<TextExtractorTool />);
+    const fileA = makeFile('a.txt', 'text/plain', 'First file');
+    const fileB = makeFile('b.txt', 'text/plain', 'Second file');
+
+    await user.upload(screen.getByLabelText(/Drop images, PDFs, Word docs, or text files/), [fileA, fileB]);
+    await waitFor(() => expect(screen.getByDisplayValue('Second file')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('tab', { name: /a\.txt/i }));
+    expect(screen.getByDisplayValue('First file')).toBeInTheDocument();
   });
 
   it('discloses that OCR downloads its engine from a CDN', () => {

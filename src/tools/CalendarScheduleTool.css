@@ -1,0 +1,33 @@
+.schedule-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.schedule-chip{border:1px solid #c9d7ef;border-radius:999px;background:#f4f8ff;color:#2b5faa;padding:5px 11px;font:700 10px 'Manrope';cursor:pointer;transition:background .15s,border-color .15s}
+.schedule-chip:hover{background:#e8f0ff;border-color:#8ba9d1}
+.schedule-template-preview{margin:0;color:#647087;font-size:10px;font-weight:600;line-height:1.45}
+.schedule-template-preview strong{color:#17203e;font-weight:800}
+.schedule-calendar-wrap{display:grid;gap:18px;margin-top:18px}
+.schedule-month{border:1px solid #e2e7ed;border-radius:14px;background:#fafbfd;padding:14px}
+.schedule-month-title{margin:0 0 10px;color:#10183e;font:800 15px 'Manrope'}
+.schedule-month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.schedule-weekday{text-align:center;color:#7a8799;font:700 9px 'Manrope';padding:4px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.schedule-day{min-height:42px;border:1px solid transparent;border-radius:9px;background:#fff;color:#17203e;font:700 12px 'Manrope';cursor:default;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:5px 2px 4px;gap:3px;position:relative}
+.schedule-day.blank{background:transparent;border-color:transparent;pointer-events:none}
+.schedule-day.has-event{cursor:pointer;border-color:#d6e1f0}
+.schedule-day.has-event:hover{background:#f2f7ff;border-color:#8ba9d1}
+.schedule-day.selected{background:#edf4ff;border-color:#2b5faa;box-shadow:0 0 0 2px #2b5fc622}
+.schedule-day.today .schedule-day-num{color:#2b5faa}
+.schedule-day-num{line-height:1}
+.schedule-day-dot{width:6px;height:6px;border-radius:50%;background:#2b5faa}
+.schedule-day-count{font:700 8px 'Manrope';color:#2b5faa;line-height:1}
+.schedule-day-empty{margin:12px 0 0;color:#7a8799;font-size:11px;text-align:center;padding:8px 12px}
+.schedule-day-popup-overlay{position:fixed;inset:0;background:rgba(15,24,62,.38);z-index:1000;animation:schedule-popup-fade .18s ease}
+.schedule-day-popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1001;width:min(420px,calc(100vw - 32px));max-height:min(80vh,520px);display:grid;grid-template-rows:auto 1fr;border:1px solid #d6e1f0;border-radius:16px;background:#fff;box-shadow:0 18px 48px rgba(16,24,62,.18);animation:schedule-popup-rise .2s ease;overflow:hidden}
+.schedule-day-popup-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 16px 12px;border-bottom:1px solid #e8edf5}
+.schedule-day-popup-head h3{margin:0;color:#10183e;font:800 15px 'Manrope';line-height:1.35}
+.schedule-day-popup-close{display:grid;place-items:center;width:32px;height:32px;border:1px solid #dce4ef;border-radius:9px;background:#f8faff;color:#475569;cursor:pointer;flex-shrink:0}
+.schedule-day-popup-close:hover{background:#edf4ff;border-color:#8ba9d1;color:#2b5faa}
+.schedule-day-popup-body{padding:12px 16px 16px;overflow:auto}
+.schedule-day-popup-body article+article{margin-top:12px;padding-top:12px;border-top:1px solid #e8edf5}
+.schedule-day-popup-body strong{display:block;color:#17203e;font:700 13px 'Manrope'}
+.schedule-day-popup-body span{display:block;color:#6d788c;font-size:11px;margin-top:3px;line-height:1.45}
+.schedule-day-popup-body p{margin:6px 0 0;color:#475569;font-size:11px;line-height:1.5;white-space:pre-wrap}
+@keyframes schedule-popup-fade{from{opacity:0}to{opacity:1}}
+@keyframes schedule-popup-rise{from{opacity:0;transform:translate(-50%,calc(-50% + 8px))}to{opacity:1;transform:translate(-50%,-50%)}}

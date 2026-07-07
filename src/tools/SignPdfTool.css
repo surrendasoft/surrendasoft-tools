@@ -1,0 +1,27 @@
+.sign-workspace{display:grid;grid-template-columns:1fr;gap:20px;margin-top:20px}
+.sign-stage-wrap{display:grid;gap:10px;width:100%}
+.sign-stage-wrap .sign-stage{position:relative;border:1px solid #dbe3ef;border-radius:14px;background:#eef2f8;overflow:hidden;line-height:0;touch-action:none;width:100%;cursor:default}
+.sign-stage-wrap .sign-stage.sign-stage-text{cursor:crosshair}
+.sign-page{width:100%;height:auto;display:block;background:#fff}
+.sign-panel{display:grid;gap:16px;padding:18px;border:1px solid #e0e6ef;border-radius:16px;background:#f8fafc}
+.sign-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;border-radius:14px;background:#eef2f8}
+.sign-mode-tabs button{display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:10px;background:transparent;color:#63708a;padding:10px;font:800 13px 'Manrope';cursor:pointer;transition:background .15s,color .15s}
+.sign-mode-tabs button.active{background:#fff;color:#10183e;box-shadow:0 3px 12px #1c305216}
+.sign-text-overlay{position:absolute;z-index:2;min-width:140px;max-width:min(320px,75%);border:1px solid #8ba9d1;border-radius:10px;background:rgba(255,255,255,.98);box-shadow:0 8px 24px #12204818;padding:8px 10px 10px;display:grid;gap:6px}
+.sign-text-overlay.selected{border-color:#2b5faa;box-shadow:0 0 0 2px #2b5fc622,0 8px 24px #12204818}
+.sign-text-overlay-handle{align-self:start;justify-self:start;border:0;background:#edf3fb;color:#476089;border-radius:6px;padding:2px 8px;font:700 11px 'Manrope';cursor:grab;touch-action:none}
+.sign-text-overlay-handle:active{cursor:grabbing}
+.sign-text-overlay-value{font:600 13px/1.35 'Manrope';color:#17203e;white-space:pre-wrap;word-break:break-word;min-height:18px}
+.sign-text-overlay-remove{justify-self:start;border:0;background:#fff0f0;color:#a64343;border-radius:7px;padding:4px 8px;font:700 10px 'Manrope';cursor:pointer}
+.sign-text-toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:end}
+.sign-selected-editor{display:grid;gap:8px;font:700 12px 'Manrope';color:#38445e}
+.sign-selected-editor input{border:1px solid #cfd8e6;border-radius:10px;padding:12px 14px;background:#fff;color:#17203e;font:600 14px 'Manrope';outline:none}
+.sign-selected-editor input:focus{border-color:#2b5faa;box-shadow:0 0 0 3px #2b5fc622}
+.sign-text-list{display:grid;gap:8px}
+.sign-text-list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #e0e5ec;border-radius:10px;background:#fff;padding:9px 10px;cursor:pointer;text-align:left}
+.sign-text-list-item.active{border-color:#8ba9d1;background:#f4f8ff}
+.sign-text-list-item strong{display:block;font:700 11px 'Manrope';color:#17203e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sign-text-list-item span{font-size:10px;color:#748096}
+.sign-text-tools{display:grid;gap:12px}
+.sign-text-tools label{display:grid;gap:6px;font:700 11px 'Manrope';color:#38445e}
+.sign-text-tools input[type=range]{width:100%;accent-color:#1766c8}

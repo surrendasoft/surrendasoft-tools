@@ -18,7 +18,7 @@ export const tools = [
   { id: 'speed', icon: 'gauge', name: 'Internet Speed Checker', description: 'Run a quick browser download test and estimate your current connection speed.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'hourly', icon: 'clock', name: 'Hourly Rate Calculator', description: 'Work out a sustainable hourly rate from income goals, billable hours, overheads, and profit.', tint: 'yellow', status: 'Available', categories: ['Free', 'Business'] },
   { id: 'margin', icon: 'dollar', name: 'Profit Margin Calculator', description: 'Calculate selling price, profit, margin, and markup for products or services.', tint: 'mint', status: 'Available', categories: ['Free', 'Business'] },
-  { id: 'signpdf', icon: 'signature', name: 'Sign PDF', description: 'See your PDF, then drag a drawn or uploaded signature onto the page and download the signed file.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Business'], featured: true },
+  { id: 'signpdf', icon: 'signature', name: 'Fill & Sign PDF', description: 'Place text on flat PDF forms, add a drawn or uploaded signature, then download one completed file.', tint: 'mint', status: 'Available', categories: ['Free', 'Files & PDF', 'Business'], featured: true },
   { id: 'tts', icon: 'volume', name: 'Text to Speech', description: 'Read any text aloud with your browser voice. Choose the voice, speed, and pitch.', tint: 'purple', status: 'Available', categories: ['Free', 'Media', 'Productivity'] },
   { id: 'recorder', icon: 'mic', name: 'Audio Recorder', description: 'Record from your microphone and download the audio. Nothing is uploaded.', tint: 'yellow', status: 'Available', categories: ['Free', 'Media'] },
   { id: 'location', icon: 'mapPin', name: 'My Location', description: 'Show your GPS coordinates and accuracy with a map link. Asks permission first.', tint: 'blue', status: 'Available', categories: ['Free', 'Utilities'] },
@@ -61,7 +61,9 @@ export const tools = [
   { id: 'quotepdf', icon: 'fileText', name: 'Quote PDF Generator', description: 'Build a professional quote or estimate with line items, GST, validity dates, and optional deposit — then download a PDF locally.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'Downloads PDF'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
   { id: 'receiptpdf', icon: 'fileText', name: 'Receipt Generator', description: 'Create a simple paid receipt PDF with amount, payer, payment method, and reference — entirely in your browser.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'Downloads PDF'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
   { id: 'pdfpages', icon: 'files', name: 'PDF Page Editor', description: 'Reorder, rotate, delete, or extract pages from a PDF in your browser. Nothing is uploaded.', tint: 'blue', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
+  { id: 'pdfform', icon: 'clipboardList', name: 'PDF Form Filler', description: 'Open PDFs with fillable fields, edit text boxes, checkboxes, dropdowns, and radio buttons, then download the completed form locally.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No upload'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
   { id: 'textextract', icon: 'scanText', name: 'Text Extractor', description: 'Extract text from images, PDFs, and Word documents in your browser. OCR runs locally with optional CDN language data.', tint: 'purple', status: 'Available', tags: ['Free', 'Browser-based', 'OCR'], categories: ['Free', 'Business', 'Files & PDF'], isNew: true },
+  { id: 'videotrim', icon: 'video', name: 'Video Trimmer', description: 'Trim the start and end of a video, or cut out a middle section. Export a shorter clip locally — no upload.', tint: 'yellow', status: 'Available', tags: ['Free', 'Browser-based', 'No upload'], categories: ['Free', 'Media', 'Files & PDF'], isNew: true },
   { id: 'checklist', icon: 'checkSquare', name: 'Quick Checklist Share', description: 'Create a checklist, tick items off, and share the latest snapshot by link or QR code. No login or live syncing.', tint: 'mint', status: 'Available', tags: ['Free', 'Browser-based', 'No backend'], categories: ['Free', 'Business', 'Productivity', 'Utilities'], isNew: true },
 ];
 
@@ -86,7 +88,7 @@ export const TOOL_FLAGS = {
   speed:      true, // Browser-based download speed test
   hourly:     true, // Sustainable hourly rate from income goals
   margin:     true, // Selling price, profit, margin, and markup
-  signpdf:    true, // Drag a drawn or uploaded signature onto a PDF
+  signpdf:    true, // Place text overlays and a signature on flat PDFs
   tts:        true, // Browser text-to-speech with voice / speed controls
   recorder:   true, // Microphone recorder → download audio
   location:   true, // GPS coordinates + map link
@@ -129,7 +131,9 @@ export const TOOL_FLAGS = {
   quotepdf:   true, // Quote / estimate PDF with validity and deposit
   receiptpdf: true, // Simple paid receipt PDF generator
   pdfpages:   true, // Reorder, rotate, delete, extract PDF pages locally
+  pdfform:    true, // Fill AcroForm PDF fields locally
   textextract: true, // OCR/text extraction from images, PDFs, and Word files
+  videotrim:   true, // Trim video start/end or remove a middle section locally
   checklist:  true, // Link-based checklist snapshots with QR sharing
 };
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import ToolGlyph from '../components/ToolGlyph.jsx';
 import { formatBytes } from '../utils/format.js';
 import { buildPdfFromPages, createPageState, deletePageState, extractPdfPages, movePageState, rotatePageState } from '../utils/pdfPages.js';
+import { openPdfDocument } from '../utils/pdfjs.js';
 import { FileDrop } from '../components/FileInputs.jsx';
 import './PdfPageTool.css';
 
@@ -27,9 +28,7 @@ export default function PdfPageTool() {
     setLoading(true); setError(''); setResult(null);
     try {
       const bytes = new Uint8Array(await sourceFile.arrayBuffer());
-      const pdfjs = await import('pdfjs-dist');
-      pdfjs.GlobalWorkerOptions.workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
-      const doc = await pdfjs.getDocument({ data: bytes.slice() }).promise;
+      const { doc } = await openPdfDocument(bytes);
       pdfDocRef.current = doc;
       setFile(sourceFile);
       setSourceBytes(bytes);

@@ -63,10 +63,15 @@ describe('deterministic tool workflows', () => {
     render(<CalendarScheduleTool />);
     await user.clear(screen.getByLabelText('Number of sessions'));
     await user.type(screen.getByLabelText('Number of sessions'), '3');
-    await user.selectOptions(screen.getByLabelText(/^Title format/), 'session');
+    fireEvent.change(screen.getByLabelText(/^Title pattern/), { target: { value: 'Session {{session}} - {{title}}' } });
     await user.click(screen.getByRole('button', { name: 'Generate schedule' }));
     expect(screen.getByText('3-session schedule')).toBeInTheDocument();
-    expect(screen.getByText('Session 3 - Counselling Lecture')).toBeInTheDocument();
+    const sessionDays = screen.getAllByRole('button', { name: /^1 session on / });
+    await user.click(sessionDays[0]);
+    expect(within(screen.getByRole('dialog')).getByText('Session 1 - Counselling Lecture')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(sessionDays[2]);
+    expect(within(screen.getByRole('dialog')).getByText('Session 3 - Counselling Lecture')).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText('End time'));
     await user.type(screen.getByLabelText('End time'), '08:00');

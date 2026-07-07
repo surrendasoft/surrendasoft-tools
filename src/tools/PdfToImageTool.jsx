@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatBytes } from '../utils/format.js';
+import { openPdfDocument } from '../utils/pdfjs.js';
 import { FileDrop, FileList } from '../components/FileInputs.jsx';
 
 export default function PdfToImageTool() {
@@ -10,9 +11,7 @@ export default function PdfToImageTool() {
     if (!file) return;
     setBusy(true); setError(''); setOutputs([]);
     try {
-      const pdfjs = await import('pdfjs-dist');
-      pdfjs.GlobalWorkerOptions.workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
-      const document = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      const { doc: document } = await openPdfDocument(await file.arrayBuffer());
       const pages = [];
       for (let number = 1; number <= document.numPages; number++) {
         const page = await document.getPage(number), viewport = page.getViewport({ scale: 1.6 });

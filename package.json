@@ -12,6 +12,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
     "@vitejs/plugin-react": "latest",
     "docx": "^9.7.1",
     "exifr": "^7.1.3",
