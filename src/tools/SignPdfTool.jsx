@@ -20,10 +20,15 @@ export default function SignPdfTool() {
   const [pageDims, setPageDims] = useState(null);
   const [docReady, setDocReady] = useState(0);
   const [layoutTick, setLayoutTick] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [paintZoom, setPaintZoom] = useState(1);
+  const [pageDisplay, setPageDisplay] = useState(null);
+  const [renderScale, setRenderScale] = useState(1);
   const [toolMode, setToolMode] = useState('text');
   const [textFields, setTextFields] = useState([]);
   const [selectedTextId, setSelectedTextId] = useState('');
-  const [textSize, setTextSize] = useState(11);
+  const [textSize, setTextSize] = useState(10);
+  const [boxDraft, setBoxDraft] = useState(null);
   const [signature, setSignature] = useState(null);
   const [sigMode, setSigMode] = useState('draw');
   const [sigDataUrl, setSigDataUrl] = useState('');
@@ -32,22 +37,29 @@ export default function SignPdfTool() {
   const [sigPlacement, setSigPlacement] = useState({ fx: 0.6, fy: 0.82, fw: 0.3 });
 
   const previewRef = useRef(null);
+  const viewportRef = useRef(null);
   const stageRef = useRef(null);
   const drawCanvasRef = useRef(null);
-  const panelInputRef = useRef(null);
+  const inlineInputRefs = useRef({});
   const pdfDocRef = useRef(null);
   const sourceBytesRef = useRef(null);
   const renderGenRef = useRef(0);
+  const interactionRef = useRef(null);
   const drawing = useRef(false);
   const lastPoint = useRef(null);
-  const dragRef = useRef(null);
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const clampZoom = value => clamp(value, 0.5, 4);
   const fheightFor = fw => pageDims ? (fw * pageDims.ptWidth) / (sigAspect * pageDims.ptHeight) : fw / sigAspect;
   const pageTextFields = useMemo(() => textFields.filter(field => field.page === pageNum), [textFields, pageNum]);
   const selectedField = textFields.find(field => field.id === selectedTextId);
 
   useEffect(() => () => { if (result?.url) URL.revokeObjectURL(result.url); }, [result?.url]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setPaintZoom(zoom), 150);
+    return () => clearTimeout(timer);
+  }, [zoom]);
 
   useEffect(() => {
     if (!file) return undefined;
@@ -58,7 +70,9 @@ export default function SignPdfTool() {
     setNumPages(0);
     setPageNum(1);
     setPageDims(null);
+    setPageDisplay(null);
     setDocReady(0);
+    setBoxDraft(null);
     pdfDocRef.current = null;
     sourceBytesRef.current = null;
 
@@ -94,18 +108,33 @@ export default function SignPdfTool() {
         await new Promise(resolve => requestAnimationFrame(resolve));
         canvas = previewRef.current;
       }
-      if (!canvas || cancelled || generation !== renderGenRef.current) return;
+      if (!canvas || cancelled || generation !== renderGenRef.current) {
+        if (!cancelled && generation === renderGenRef.current && !canvas) {
+          setError('Could not display the PDF preview.');
+        }
+        return;
+      }
 
       setRendering(true);
       try {
         const page = await doc.getPage(pageNum);
         if (cancelled || generation !== renderGenRef.current) return;
         const base = page.getViewport({ scale: 1 });
+        const containerWidth = Math.max(320, (viewportRef.current?.clientWidth || 320) - 24);
+        const dpr = window.devicePixelRatio || 1;
+        const fitScale = containerWidth / base.width;
+        const displayScale = fitScale * paintZoom;
+        const outputScale = displayScale * dpr;
+        const viewport = page.getViewport({ scale: outputScale });
+        const displayWidth = viewport.width / dpr;
+        const displayHeight = viewport.height / dpr;
         setPageDims({ ptWidth: base.width, ptHeight: base.height });
-        const width = stageRef.current?.clientWidth || canvas.parentElement?.clientWidth || base.width;
-        const viewport = page.getViewport({ scale: width / base.width });
+        setPageDisplay({ width: displayWidth, height: displayHeight });
+        setRenderScale(displayScale);
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         await page.render({ canvasContext: ctx, viewport }).promise;
@@ -120,17 +149,17 @@ export default function SignPdfTool() {
 
     paintPage();
     return () => { cancelled = true; };
-  }, [file, pageNum, docReady, layoutTick]);
+  }, [file, pageNum, docReady, layoutTick, paintZoom]);
 
   useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || !docReady) return undefined;
+    const target = viewportRef.current;
+    if (!target || !docReady) return undefined;
     let timer;
     const observer = new ResizeObserver(() => {
       clearTimeout(timer);
       timer = setTimeout(() => setLayoutTick(current => current + 1), 120);
     });
-    observer.observe(stage);
+    observer.observe(target);
     return () => {
       observer.disconnect();
       clearTimeout(timer);
@@ -148,16 +177,12 @@ export default function SignPdfTool() {
     ctx.strokeStyle = '#10183e';
   }, [sigMode, file]);
 
-  useEffect(() => {
-    if (!selectedTextId || toolMode !== 'text') return;
-    panelInputRef.current?.focus();
-  }, [selectedTextId, toolMode]);
-
   const goToPage = next => {
     const doc = pdfDocRef.current;
     if (!doc || next < 1 || next > doc.numPages || rendering) return;
     setPageNum(next);
     setSelectedTextId('');
+    setBoxDraft(null);
   };
 
   const reset = () => {
@@ -172,20 +197,35 @@ export default function SignPdfTool() {
     setNumPages(0);
     setPageNum(1);
     setPageDims(null);
+    setPageDisplay(null);
     setDocReady(0);
+    setZoom(1);
+    setPaintZoom(1);
+    setBoxDraft(null);
     setHasInk(false);
     pdfDocRef.current = null;
     sourceBytesRef.current = null;
   };
 
-  const addTextField = (fx, fy, text = '') => {
+  const addTextBox = (fx, fy, fw, fh, text = '') => {
     const id = `t${nextTextId++}`;
-    const field = { id, page: pageNum, fx: clamp(fx, 0, 0.92), fy: clamp(fy, 0, 0.96), text, size: textSize };
+    const field = {
+      id,
+      page: pageNum,
+      fx: clamp(fx, 0, 1),
+      fy: clamp(fy, 0, 1),
+      fw: clamp(fw, 0.02, 1 - fx),
+      fh: clamp(fh, 0.015, 1 - fy),
+      text,
+      size: textSize,
+    };
     setTextFields(current => [...current, field]);
     setSelectedTextId(id);
     setToolMode('text');
     setResult(null);
     setError('');
+    requestAnimationFrame(() => inlineInputRefs.current[id]?.focus());
+    return id;
   };
 
   const updateTextField = (id, patch) => {
@@ -196,14 +236,149 @@ export default function SignPdfTool() {
   const removeTextField = id => {
     setTextFields(current => current.filter(field => field.id !== id));
     setSelectedTextId(current => (current === id ? '' : current));
+    delete inlineInputRefs.current[id];
     setResult(null);
   };
 
-  const onStageClick = event => {
-    if (toolMode !== 'text' || rendering) return;
-    if (event.target !== previewRef.current && event.target !== stageRef.current) return;
+  const stageFraction = (clientX, clientY) => {
     const rect = stageRef.current.getBoundingClientRect();
-    addTextField((event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height);
+    return {
+      fx: clamp((clientX - rect.left) / rect.width, 0, 1),
+      fy: clamp((clientY - rect.top) / rect.height, 0, 1),
+    };
+  };
+
+  const onStagePointerDown = event => {
+    if (rendering) return;
+    if (toolMode === 'text') {
+      if (event.target !== previewRef.current && event.target !== stageRef.current) return;
+      event.preventDefault();
+      stageRef.current?.setPointerCapture?.(event.pointerId);
+      const { fx, fy } = stageFraction(event.clientX, event.clientY);
+      interactionRef.current = { kind: 'drawBox', startFx: fx, startFy: fy };
+      setBoxDraft({ fx, fy, fw: 0, fh: 0 });
+      return;
+    }
+  };
+
+  const onStagePointerMove = event => {
+    const drag = interactionRef.current;
+    if (!drag) return;
+
+    if (drag.kind === 'drawBox') {
+      const { fx, fy } = stageFraction(event.clientX, event.clientY);
+      const left = Math.min(drag.startFx, fx);
+      const top = Math.min(drag.startFy, fy);
+      setBoxDraft({
+        fx: left,
+        fy: top,
+        fw: Math.abs(fx - drag.startFx),
+        fh: Math.abs(fy - drag.startFy),
+      });
+      return;
+    }
+
+    const dx = (event.clientX - drag.startX) / drag.rect.width;
+    const dy = (event.clientY - drag.startY) / drag.rect.height;
+
+    if (drag.kind === 'moveBox') {
+      updateTextField(drag.id, {
+        fx: clamp(drag.orig.fx + dx, 0, 1 - drag.orig.fw),
+        fy: clamp(drag.orig.fy + dy, 0, 1 - drag.orig.fh),
+      });
+      return;
+    }
+
+    if (drag.kind === 'resizeBox') {
+      updateTextField(drag.id, {
+        fw: clamp(drag.orig.fw + dx, 0.02, 1 - drag.orig.fx),
+        fh: clamp(drag.orig.fh + dy, 0.015, 1 - drag.orig.fy),
+      });
+      return;
+    }
+
+    if (drag.kind === 'signature') {
+      if (drag.mode === 'move') {
+        const nextFx = clamp(drag.orig.fx + dx, 0, 1 - sigPlacement.fw);
+        const nextFy = clamp(drag.orig.fy + dy, 0, 1 - fheightFor(sigPlacement.fw));
+        setSigPlacement(previous => ({ ...previous, fx: nextFx, fy: nextFy }));
+        if (signature?.page === pageNum) setSignature(previous => previous ? { ...previous, fx: nextFx, fy: nextFy } : previous);
+      } else {
+        const fw = clamp(drag.orig.fw + dx, 0.06, 1 - drag.orig.fx);
+        const nextFy = Math.min(drag.orig.fy, 1 - fheightFor(fw));
+        setSigPlacement(previous => ({ ...previous, fw, fy: nextFy }));
+        if (signature?.page === pageNum) setSignature(previous => previous ? { ...previous, fw, fy: nextFy } : previous);
+      }
+    }
+  };
+
+  const onStagePointerUp = event => {
+    const drag = interactionRef.current;
+    if (!drag) return;
+    stageRef.current?.releasePointerCapture?.(event.pointerId);
+
+    if (drag.kind === 'drawBox' && pageDisplay) {
+      const { fx, fy } = stageFraction(event.clientX, event.clientY);
+      const left = Math.min(drag.startFx, fx);
+      const top = Math.min(drag.startFy, fy);
+      const fw = Math.abs(fx - drag.startFx);
+      const fh = Math.abs(fy - drag.startFy);
+      if (fw * pageDisplay.width >= 24 && fh * pageDisplay.height >= 12) {
+        addTextBox(left, top, fw, fh);
+      }
+      setBoxDraft(null);
+    }
+
+    interactionRef.current = null;
+  };
+
+  const beginMoveBox = id => event => {
+    if (selectedTextId !== id) {
+      setSelectedTextId(id);
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const field = textFields.find(item => item.id === id);
+    interactionRef.current = {
+      kind: 'moveBox',
+      id,
+      startX: event.clientX,
+      startY: event.clientY,
+      rect: stageRef.current.getBoundingClientRect(),
+      orig: { fx: field.fx, fy: field.fy, fw: field.fw, fh: field.fh },
+    };
+  };
+
+  const beginResizeBox = id => event => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const field = textFields.find(item => item.id === id);
+    setSelectedTextId(id);
+    interactionRef.current = {
+      kind: 'resizeBox',
+      id,
+      startX: event.clientX,
+      startY: event.clientY,
+      rect: stageRef.current.getBoundingClientRect(),
+      orig: { fx: field.fx, fy: field.fy, fw: field.fw, fh: field.fh },
+    };
+  };
+
+  const beginSigDrag = mode => event => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    interactionRef.current = {
+      kind: 'signature',
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      rect: stageRef.current.getBoundingClientRect(),
+      orig: { ...sigPlacement },
+    };
   };
 
   const pointerPos = event => {
@@ -313,63 +488,6 @@ export default function SignPdfTool() {
     setError('');
   };
 
-  const beginSigDrag = mode => event => {
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    dragRef.current = {
-      kind: 'signature',
-      mode,
-      startX: event.clientX,
-      startY: event.clientY,
-      rect: stageRef.current.getBoundingClientRect(),
-      orig: { ...sigPlacement },
-    };
-  };
-
-  const beginTextDrag = id => event => {
-    event.preventDefault();
-    event.stopPropagation();
-    setSelectedTextId(id);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    const field = textFields.find(item => item.id === id);
-    dragRef.current = {
-      kind: 'text',
-      id,
-      startX: event.clientX,
-      startY: event.clientY,
-      rect: stageRef.current.getBoundingClientRect(),
-      orig: { fx: field.fx, fy: field.fy },
-    };
-  };
-
-  const onDrag = event => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const dx = (event.clientX - drag.startX) / drag.rect.width;
-    const dy = (event.clientY - drag.startY) / drag.rect.height;
-    if (drag.kind === 'signature') {
-      if (drag.mode === 'move') {
-        const fx = clamp(drag.orig.fx + dx, 0, 1 - sigPlacement.fw);
-        const fy = clamp(drag.orig.fy + dy, 0, 1 - fheightFor(sigPlacement.fw));
-        setSigPlacement(previous => ({ ...previous, fx, fy }));
-        if (signature?.page === pageNum) setSignature(previous => previous ? { ...previous, fx, fy } : previous);
-      } else {
-        const fw = clamp(drag.orig.fw + dx, 0.06, 1 - drag.orig.fx);
-        const fy = Math.min(drag.orig.fy, 1 - fheightFor(fw));
-        setSigPlacement(previous => ({ ...previous, fw, fy }));
-        if (signature?.page === pageNum) setSignature(previous => previous ? { ...previous, fw, fy } : previous);
-      }
-      return;
-    }
-    updateTextField(drag.id, {
-      fx: clamp(drag.orig.fx + dx, 0, 0.92),
-      fy: clamp(drag.orig.fy + dy, 0, 0.96),
-    });
-  };
-
-  const endDrag = () => { dragRef.current = null; };
-
   const activeSignature = signature?.page === pageNum ? signature : null;
   const signaturePreview = activeSignature || (sigDataUrl && toolMode === 'signature' ? { ...sigPlacement, dataUrl: sigDataUrl, aspect: sigAspect } : null);
 
@@ -397,7 +515,7 @@ export default function SignPdfTool() {
         accept="application/pdf"
         onFiles={files => { setFile(files[0] || null); setResult(null); setError(''); setTextFields([]); setSignature(null); setSigDataUrl(''); }}
         title="Choose a PDF to fill and sign"
-        hint="Add text anywhere on flat forms, place a signature, then download — all locally"
+        hint="Draw text boxes on flat forms, place a signature, then download — all locally"
       />
     ) : (
       <FileList files={[file]} onRemove={reset}/>
@@ -413,47 +531,86 @@ export default function SignPdfTool() {
               <button className="button secondary compact" onClick={() => goToPage(pageNum + 1)} disabled={pageNum >= numPages || rendering}>Next</button>
             </div>
           )}
-          <div
-            className={`sign-stage${toolMode === 'text' ? ' sign-stage-text' : ''}`}
-            ref={stageRef}
-            onClick={onStageClick}
-            onPointerMove={onDrag}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-          >
-            <canvas ref={previewRef} className="sign-page"/>
-            {pageTextFields.map(field => (
-              <div
-                key={field.id}
-                className={`sign-text-overlay${selectedTextId === field.id ? ' selected' : ''}`}
-                style={{ left: `${field.fx * 100}%`, top: `${field.fy * 100}%` }}
-                onClick={event => { event.stopPropagation(); setSelectedTextId(field.id); }}
-              >
-                <button
-                  type="button"
-                  className="sign-text-overlay-handle"
-                  aria-label="Drag text box"
-                  onPointerDown={beginTextDrag(field.id)}
-                >⋮⋮</button>
-                <div className="sign-text-overlay-value">{field.text || 'Empty text box'}</div>
-                <button type="button" className="sign-text-overlay-remove" onClick={event => { event.stopPropagation(); removeTextField(field.id); }}>Remove</button>
+          <div className="sign-stage-toolbar">
+            <label className="sign-zoom-control">
+              Zoom
+              <div className="sign-zoom-buttons">
+                <button type="button" className="button secondary compact" aria-label="Zoom out" onClick={() => setZoom(current => clampZoom(current - 0.25))}>−</button>
+                <input type="range" min="50" max="400" step="5" value={Math.round(zoom * 100)} onChange={event => setZoom(clampZoom(Number(event.target.value) / 100))}/>
+                <button type="button" className="button secondary compact" aria-label="Zoom in" onClick={() => setZoom(current => clampZoom(current + 0.25))}>+</button>
+                <span>{Math.round(zoom * 100)}%</span>
               </div>
-            ))}
-            {signaturePreview && pageDims && (
-              <div
-                className="sign-overlay"
-                style={{ left: `${(activeSignature ? activeSignature.fx : sigPlacement.fx) * 100}%`, top: `${(activeSignature ? activeSignature.fy : sigPlacement.fy) * 100}%`, width: `${(activeSignature ? activeSignature.fw : sigPlacement.fw) * 100}%` }}
-                onPointerDown={beginSigDrag('move')}
-              >
-                <img src={signaturePreview.dataUrl} alt="Signature" draggable="false"/>
-                <span className="sign-handle" onPointerDown={beginSigDrag('resize')}/>
-              </div>
-            )}
-            {rendering && <div className="sign-loading">Loading page…</div>}
+            </label>
+            <button type="button" className="button secondary compact" onClick={() => setZoom(1)}>Reset zoom</button>
+          </div>
+          <div className="sign-viewport" ref={viewportRef}>
+            <div
+              className={`sign-stage${toolMode === 'text' ? ' sign-stage-text' : ''}${!pageDisplay ? ' sign-stage-loading' : ''}`}
+              ref={stageRef}
+              style={pageDisplay ? { width: pageDisplay.width, height: pageDisplay.height } : undefined}
+              onPointerDown={onStagePointerDown}
+              onPointerMove={onStagePointerMove}
+              onPointerUp={onStagePointerUp}
+              onPointerCancel={onStagePointerUp}
+            >
+              <canvas ref={previewRef} className="sign-page"/>
+              {boxDraft && (
+                <div
+                  className="sign-box-draft"
+                  style={{
+                    left: `${boxDraft.fx * 100}%`,
+                    top: `${boxDraft.fy * 100}%`,
+                    width: `${boxDraft.fw * 100}%`,
+                    height: `${boxDraft.fh * 100}%`,
+                  }}
+                />
+              )}
+              {pageDisplay && pageTextFields.map(field => (
+                <div
+                  key={field.id}
+                  className={`sign-text-box${selectedTextId === field.id ? ' selected' : ''}`}
+                  style={{
+                    left: `${field.fx * 100}%`,
+                    top: `${field.fy * 100}%`,
+                    width: `${field.fw * 100}%`,
+                    height: `${field.fh * 100}%`,
+                  }}
+                  onClick={event => { event.stopPropagation(); setSelectedTextId(field.id); }}
+                >
+                  {selectedTextId === field.id && (
+                    <span className="sign-text-box-dragbar" onPointerDown={beginMoveBox(field.id)} aria-hidden="true"/>
+                  )}
+                  <input
+                    ref={node => { if (node) inlineInputRefs.current[field.id] = node; }}
+                    className="sign-text-box-input"
+                    value={field.text}
+                    placeholder="Type here"
+                    style={{ fontSize: `${Math.max(8, field.size * renderScale * 0.75)}px` }}
+                    onChange={event => updateTextField(field.id, { text: event.target.value })}
+                    onFocus={() => setSelectedTextId(field.id)}
+                    onClick={event => event.stopPropagation()}
+                  />
+                  {selectedTextId === field.id && (
+                    <span className="sign-text-box-handle" onPointerDown={beginResizeBox(field.id)}/>
+                  )}
+                </div>
+              ))}
+              {pageDisplay && signaturePreview && pageDims && (
+                <div
+                  className="sign-overlay"
+                  style={{ left: `${(activeSignature ? activeSignature.fx : sigPlacement.fx) * 100}%`, top: `${(activeSignature ? activeSignature.fy : sigPlacement.fy) * 100}%`, width: `${(activeSignature ? activeSignature.fw : sigPlacement.fw) * 100}%` }}
+                  onPointerDown={beginSigDrag('move')}
+                >
+                  <img src={signaturePreview.dataUrl} alt="Signature" draggable="false"/>
+                  <span className="sign-handle" onPointerDown={beginSigDrag('resize')}/>
+                </div>
+              )}
+              {rendering && <div className="sign-loading">{pageDisplay ? 'Rendering page…' : 'Opening PDF…'}</div>}
+            </div>
           </div>
           <p className="sign-hint">
             {toolMode === 'text'
-              ? 'Click the page to add a text box, then type below. Drag using the handle on each box.'
+              ? 'Drag on the page to draw a text box, then type your answer inside it. Drag the box border to move, or the corner handle to resize.'
               : signaturePreview
                 ? 'Drag the signature to position it, and drag the corner handle to resize.'
                 : 'Draw or upload a signature below, then place it on the document.'}
@@ -472,28 +629,21 @@ export default function SignPdfTool() {
 
           {toolMode === 'text' ? (
             <div className="sign-text-tools">
-              <p className="sign-hint">For flat forms like bank authority forms — add text boxes on the page, then type your answers here.</p>
+              <p className="sign-hint">For flat forms like bank authority forms — draw a box over each answer field, then type directly on the page.</p>
               <div className="sign-text-toolbar">
-                <button type="button" className="button secondary compact" onClick={() => addTextField(0.12, 0.12)}>Add text box on this page</button>
-                <label>Text size<input type="range" min="8" max="18" value={textSize} onChange={event => {
-                  const size = Number(event.target.value);
-                  setTextSize(size);
-                  if (selectedTextId) updateTextField(selectedTextId, { size });
-                }}/> {textSize} pt</label>
-              </div>
-              {selectedField ? (
-                <label className="sign-selected-editor">
-                  Text for selected box
-                  <input
-                    ref={panelInputRef}
-                    value={selectedField.text}
-                    placeholder="Type the answer for this field"
-                    onChange={event => updateTextField(selectedField.id, { text: event.target.value })}
-                  />
+                <label>
+                  Text size
+                  <input type="range" min="8" max="18" value={textSize} onChange={event => {
+                    const size = Number(event.target.value);
+                    setTextSize(size);
+                    if (selectedTextId) updateTextField(selectedTextId, { size });
+                  }}/>
+                  {textSize} pt
                 </label>
-              ) : (
-                <p className="sign-hint">Select a text box on the page, or click the page to add one.</p>
-              )}
+                {selectedField && (
+                  <button type="button" className="button secondary compact" onClick={() => removeTextField(selectedField.id)}>Remove selected box</button>
+                )}
+              </div>
               {pageTextFields.length > 0 && (
                 <div className="sign-text-list">
                   {pageTextFields.map(field => (
@@ -501,7 +651,10 @@ export default function SignPdfTool() {
                       key={field.id}
                       type="button"
                       className={`sign-text-list-item${selectedTextId === field.id ? ' active' : ''}`}
-                      onClick={() => setSelectedTextId(field.id)}
+                      onClick={() => {
+                        setSelectedTextId(field.id);
+                        inlineInputRefs.current[field.id]?.focus();
+                      }}
                     >
                       <div><strong>{field.text || 'Empty text box'}</strong><span>{field.size} pt on page {field.page}</span></div>
                     </button>
@@ -547,6 +700,6 @@ export default function SignPdfTool() {
         <a className="button primary compact" href={result.url} download={result.name}><Icon name="arrow" size={16}/>Download PDF</a>
       </div>
     )}
-    <p className="tool-footnote">Fill flat PDF forms by placing text boxes, add a signature if needed, then download once. For PDFs with built-in fillable fields, use PDF Form Filler instead. For legally binding e-signatures, use a dedicated service with audit trails.</p>
+    <p className="tool-footnote">Fill flat PDF forms by drawing text boxes on the page, add a signature if needed, then download once. For PDFs with built-in fillable fields, use PDF Form Filler instead. For legally binding e-signatures, use a dedicated service with audit trails.</p>
   </>;
 }

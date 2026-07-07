@@ -1,24 +1,30 @@
 .sign-workspace{display:grid;grid-template-columns:1fr;gap:20px;margin-top:20px}
 .sign-stage-wrap{display:grid;gap:10px;width:100%}
-.sign-stage-wrap .sign-stage{position:relative;border:1px solid #dbe3ef;border-radius:14px;background:#eef2f8;overflow:hidden;line-height:0;touch-action:none;width:100%;cursor:default}
+.sign-stage-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between}
+.sign-zoom-control{display:grid;gap:6px;flex:1;min-width:220px;font:700 11px 'Manrope';color:#38445e}
+.sign-zoom-buttons{display:flex;align-items:center;gap:8px}
+.sign-zoom-buttons input[type=range]{flex:1;min-width:120px;accent-color:#1766c8}
+.sign-zoom-buttons span{min-width:48px;font:800 12px 'Manrope';color:#17203e;text-align:right}
+.sign-viewport{overflow:auto;max-height:min(78vh,920px);border:1px solid #dbe3ef;border-radius:14px;background:#eef2f8;padding:12px}
+.sign-stage-wrap .sign-stage{position:relative;line-height:0;touch-action:none;cursor:default;background:#fff;overflow:visible;width:auto;min-height:280px;display:inline-block;vertical-align:top}
+.sign-stage-wrap .sign-stage.sign-stage-loading{min-height:280px;min-width:100%}
 .sign-stage-wrap .sign-stage.sign-stage-text{cursor:crosshair}
-.sign-page{width:100%;height:auto;display:block;background:#fff}
+.sign-viewport .sign-page{display:block;width:auto!important;height:auto!important;max-width:none;background:#fff;vertical-align:top}
+.sign-box-draft{position:absolute;z-index:3;border:2px dashed #1766c8;background:rgba(23,102,200,.08);pointer-events:none;box-sizing:border-box}
+.sign-text-box{position:absolute;z-index:2;box-sizing:border-box;border:1.5px solid #b8c4d8;background:rgba(255,255,255,.88);border-radius:2px;touch-action:none}
+.sign-text-box.selected{border-color:#2b5faa;box-shadow:0 0 0 1px #2b5fc655;background:rgba(255,255,255,.95)}
+.sign-text-box-input{width:100%;height:100%;border:0;background:transparent;color:#17203e;font-weight:600;padding:2px 4px;outline:none;box-sizing:border-box;line-height:1.1}
+.sign-text-box-input::placeholder{color:#8a93a3;font-weight:500}
+.sign-text-box-dragbar{position:absolute;top:0;left:0;right:0;height:8px;cursor:move;z-index:2;background:rgba(43,95,170,.12);border-radius:2px 2px 0 0}
+.sign-text-box.selected .sign-text-box-input{cursor:text;padding-top:10px}
+.sign-text-box-handle{position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:50%;background:#1766c8;border:2px solid #fff;box-shadow:0 2px 6px rgba(16,24,62,.25);cursor:nwse-resize;z-index:3;touch-action:none}
 .sign-panel{display:grid;gap:16px;padding:18px;border:1px solid #e0e6ef;border-radius:16px;background:#f8fafc}
 .sign-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;border-radius:14px;background:#eef2f8}
 .sign-mode-tabs button{display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:10px;background:transparent;color:#63708a;padding:10px;font:800 13px 'Manrope';cursor:pointer;transition:background .15s,color .15s}
 .sign-mode-tabs button.active{background:#fff;color:#10183e;box-shadow:0 3px 12px #1c305216}
-.sign-text-overlay{position:absolute;z-index:2;min-width:140px;max-width:min(320px,75%);border:1px solid #8ba9d1;border-radius:10px;background:rgba(255,255,255,.98);box-shadow:0 8px 24px #12204818;padding:8px 10px 10px;display:grid;gap:6px}
-.sign-text-overlay.selected{border-color:#2b5faa;box-shadow:0 0 0 2px #2b5fc622,0 8px 24px #12204818}
-.sign-text-overlay-handle{align-self:start;justify-self:start;border:0;background:#edf3fb;color:#476089;border-radius:6px;padding:2px 8px;font:700 11px 'Manrope';cursor:grab;touch-action:none}
-.sign-text-overlay-handle:active{cursor:grabbing}
-.sign-text-overlay-value{font:600 13px/1.35 'Manrope';color:#17203e;white-space:pre-wrap;word-break:break-word;min-height:18px}
-.sign-text-overlay-remove{justify-self:start;border:0;background:#fff0f0;color:#a64343;border-radius:7px;padding:4px 8px;font:700 10px 'Manrope';cursor:pointer}
 .sign-text-toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:end}
-.sign-selected-editor{display:grid;gap:8px;font:700 12px 'Manrope';color:#38445e}
-.sign-selected-editor input{border:1px solid #cfd8e6;border-radius:10px;padding:12px 14px;background:#fff;color:#17203e;font:600 14px 'Manrope';outline:none}
-.sign-selected-editor input:focus{border-color:#2b5faa;box-shadow:0 0 0 3px #2b5fc622}
 .sign-text-list{display:grid;gap:8px}
-.sign-text-list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #e0e5ec;border-radius:10px;background:#fff;padding:9px 10px;cursor:pointer;text-align:left}
+.sign-text-list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #e0e5ec;border-radius:10px;background:#fff;padding:9px 10px;cursor:pointer;text-align:left;width:100%}
 .sign-text-list-item.active{border-color:#8ba9d1;background:#f4f8ff}
 .sign-text-list-item strong{display:block;font:700 11px 'Manrope';color:#17203e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sign-text-list-item span{font-size:10px;color:#748096}

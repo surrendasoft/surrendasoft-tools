@@ -24,7 +24,7 @@ describe('pdfMarkup utilities', () => {
   it('writes text overlays into the PDF', async () => {
     const source = await blankPdfBytes();
     const bytes = await exportMarkedPdf(source, {
-      textFields: [{ page: 1, fx: 0.1, fy: 0.2, text: 'Jane Doe', size: 12 }],
+      textFields: [{ page: 1, fx: 0.1, fy: 0.2, fw: 0.3, fh: 0.04, text: 'Jane Doe', size: 12 }],
       signature: null,
     });
     expect(bytes.byteLength).toBeGreaterThan(source.byteLength);

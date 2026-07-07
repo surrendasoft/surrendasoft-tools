@@ -10,10 +10,12 @@ export async function exportMarkedPdf(arrayBuffer, { textFields = [], signature 
     const text = String(field.text || '').trim();
     if (!page || !text) return;
     const { width, height } = page.getSize();
-    const size = field.size || 11;
+    const boxH = (field.fh || 0.04) * height;
+    const padding = 2;
+    const size = field.size || Math.min(12, Math.max(8, boxH * 0.7));
     page.drawText(text, {
-      x: field.fx * width,
-      y: height - field.fy * height - size,
+      x: field.fx * width + padding,
+      y: height - field.fy * height - padding - size,
       size,
       font,
       color: ink,
